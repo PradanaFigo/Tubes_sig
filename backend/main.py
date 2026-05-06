@@ -2,7 +2,9 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast
 from geoalchemy2 import Geography
+from pydantic import BaseModel
 import json
+import hashlib
 
 import models, schemas
 from database import engine, get_db
@@ -11,12 +13,11 @@ from database import engine, get_db
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="WebGIS Transportasi Jakarta Timur API",
+    title="WebGIS Transportasi API",
     description="API untuk manajemen data Halte dan Rute Angkutan Umum dengan format GeoJSON.",
-    version="1.0.0"
+    version="2.0.0"
 )
 
-# CORS Middleware agar Frontend ReactJS bisa mengakses API ini tanpa ditolak
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
@@ -27,10 +28,55 @@ app.add_middleware(
 )
 
 # ==========================================
-# 1. ENDPOINTS: HALTE (CRUD)
+# 0. SCHEMA UNTUK LOGIN & REGISTER
+# ==========================================
+class AdminAuth(BaseModel):
+    username: str
+    password: str
+
+def hash_password(password: str):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# ==========================================
+# 1. ENDPOINTS: AUTHENTICATION (AKUN ADMIN)
 # ==========================================
 
-@app.post("/api/halte", response_model=dict)
+@app.post("/api/auth/register")
+def register_admin(data: AdminAuth, db: Session = Depends(get_db)):
+    # Cek apakah username sudah ada
+    existing_user = db.query(models.Admin).filter(models.Admin.username == data.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username sudah terdaftar")
+    
+    # Buat admin baru
+    new_admin = models.Admin(
+        username=data.username,
+        password=hash_password(data.password)
+    )
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
+    return {"message": "Akun admin berhasil dibuat", "id_admin": new_admin.id_admin}
+
+@app.post("/api/auth/login")
+def login_admin(data: AdminAuth, db: Session = Depends(get_db)):
+    # Cari user berdasarkan username
+    admin = db.query(models.Admin).filter(models.Admin.username == data.username).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Username tidak ditemukan")
+    
+    # Verifikasi password
+    if admin.password != hash_password(data.password):
+        raise HTTPException(status_code=401, detail="Password salah")
+    
+    return {"message": "Login berhasil", "id_admin": admin.id_admin, "username": admin.username}
+
+
+# ==========================================
+# 2. ENDPOINTS: HALTE (CRUD)
+# ==========================================
+
+@app.post("/api/halte")
 def create_halte(halte: schemas.HalteCreate, db: Session = Depends(get_db)):
     point_wkt = f"SRID=4326;POINT({halte.lon} {halte.lat})"
     
@@ -40,14 +86,14 @@ def create_halte(halte: schemas.HalteCreate, db: Session = Depends(get_db)):
         tipe_halte=halte.tipe_halte,
         rute_terhubung=halte.rute_terhubung,
         fasilitas_shelter=halte.fasilitas_shelter,
-        id_admin=halte.id_admin,
+        id_admin=halte.id_admin if hasattr(halte, 'id_admin') else 1, # Default admin jika kosong
         geom=func.ST_GeomFromEWKT(point_wkt)
     )
     db.add(db_halte)
     db.commit()
     return {"message": "Data Halte berhasil ditambahkan"}
 
-@app.get("/api/halte", response_model=schemas.GeoJSONFeatureCollection)
+@app.get("/api/halte")
 def get_semua_halte(db: Session = Depends(get_db)):
     results = db.query(models.Halte, func.ST_AsGeoJSON(models.Halte.geom).label('geojson')).all()
     
@@ -81,10 +127,10 @@ def delete_halte(id_halte: int, db: Session = Depends(get_db)):
     return {"message": "Halte berhasil dihapus"}
 
 # ==========================================
-# 2. ENDPOINTS: RUTE (Read & Delete)
+# 3. ENDPOINTS: RUTE (Read & Delete)
 # ==========================================
 
-@app.get("/api/rute", response_model=schemas.GeoJSONFeatureCollection)
+@app.get("/api/rute")
 def get_semua_rute(db: Session = Depends(get_db)):
     results = db.query(models.Rute, func.ST_AsGeoJSON(models.Rute.geom).label('geojson')).all()
     
@@ -120,12 +166,12 @@ def delete_rute(id_rute: int, db: Session = Depends(get_db)):
     return {"message": "Rute berhasil dihapus"}
 
 # ==========================================
-# 3. ENDPOINTS: ANALISIS SPASIAL
+# 4. ENDPOINTS: ANALISIS SPASIAL
 # ==========================================
 
-# A. ST_DWithin: Cari Halte terdekat dalam radius meter
-@app.get("/api/analisis/halte-terdekat", response_model=schemas.GeoJSONFeatureCollection)
-def cari_halte_terdekat(lat: float, lon: float, radius_meter: float = 500, db: Session = Depends(get_db)):
+# A. ST_DWithin (Mencari Halte Terdekat)
+@app.get("/api/analisis/halte-terdekat")
+def cari_halte_terdekat(lat: float, lon: float, radius_meter: float = 1000, db: Session = Depends(get_db)):
     search_point = f"SRID=4326;POINT({lon} {lat})"
     
     results = db.query(models.Halte, func.ST_AsGeoJSON(models.Halte.geom).label('geojson')).filter(
@@ -136,9 +182,6 @@ def cari_halte_terdekat(lat: float, lon: float, radius_meter: float = 500, db: S
         )
     ).all()
     
-    if not results:
-        raise HTTPException(status_code=404, detail=f"Tidak ditemukan halte dalam radius {radius_meter} meter")
-
     features = []
     for h, g in results:
         if g:
@@ -148,25 +191,52 @@ def cari_halte_terdekat(lat: float, lon: float, radius_meter: float = 500, db: S
                 "properties": {
                     "id_halte": h.id_halte,
                     "nama_halte": h.nama_halte,
+                    "alamat_jalan": h.alamat_jalan,
+                    "tipe_halte": h.tipe_halte,
                     "rute_terhubung": h.rute_terhubung
                 }
             })
     return {"type": "FeatureCollection", "features": features}
 
-# B. ST_Intersects: Cari Rute yang melewati buffer 100m dari titik
-@app.get("/api/analisis/rute-bersinggungan")
-def cari_rute_lewat_sini(lat: float, lon: float, db: Session = Depends(get_db)):
-    search_area = f"SRID=4326;POINT({lon} {lat})"
+# B. ST_Intersects (Mencari Rute yang Memotong Radius)
+@app.get("/api/analisis/rute-intersect")
+def cari_rute_intersect(lat: float, lon: float, radius_meter: float = 1000, db: Session = Depends(get_db)):
+    # Membuat Polygon lingkaran (Buffer) dari titik pusat
+    titik_pusat = func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+    area_lingkaran = func.ST_Buffer(cast(titik_pusat, Geography), radius_meter)
     
-    results = db.query(models.Rute).filter(
-        func.ST_Intersects(
-            cast(models.Rute.geom, Geography),
-            func.ST_Buffer(cast(func.ST_GeomFromEWKT(search_area), Geography), 100)
-        )
+    # Mencari rute yang memotong (ST_Intersects) area lingkaran tersebut
+    results = db.query(models.Rute, func.ST_AsGeoJSON(models.Rute.geom).label('geojson')).filter(
+        func.ST_Intersects(models.Rute.geom, cast(area_lingkaran, models.Rute.geom.type))
     ).all()
     
-    if not results:
-        raise HTTPException(status_code=404, detail="Tidak ada rute yang melewati titik ini")
+    features = []
+    for r, g in results:
+        if g:
+            features.append({
+                "type": "Feature", 
+                "geometry": json.loads(g), 
+                "properties": {
+                    "kode_rute": r.kode_rute,
+                    "nama_rute": r.nama_rute,
+                    "jenis_angkutan": r.jenis_angkutan
+                }
+            })
+    return {"type": "FeatureCollection", "features": features}
 
-    data_rute = [{"kode": r.kode_rute, "nama": r.nama_rute, "jenis": r.jenis_angkutan} for r in results]
-    return {"rute_ditemukan": data_rute}
+# C. ST_Length (Menghitung Panjang Jalur)
+@app.get("/api/analisis/panjang-rute/{kode_rute}")
+def hitung_panjang_rute(kode_rute: str, db: Session = Depends(get_db)):
+    hasil = db.query(
+        models.Rute.nama_rute,
+        func.ST_Length(cast(models.Rute.geom, Geography)).label("panjang_meter")
+    ).filter(models.Rute.kode_rute == kode_rute).first()
+
+    if not hasil:
+        raise HTTPException(status_code=404, detail="Rute tidak ditemukan")
+
+    return {
+        "kode_rute": kode_rute,
+        "nama_rute": hasil.nama_rute,
+        "panjang_km": round(hasil.panjang_meter / 1000, 2)
+    }

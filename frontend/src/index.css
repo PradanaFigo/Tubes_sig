@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Memaksa peta Leaflet mengambil sisa ruang */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}

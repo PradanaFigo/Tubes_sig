@@ -40,7 +40,7 @@ const MAP_LAYERS = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
 };
 
-// --- KOMPONEN MINIMAP (RADAR DINAMIS) ---
+// --- KOMPONEN MINIMAP (RADAR DINAMIS & DETAIL) ---
 function MinimapInner({ mainMap }) {
   const minimap = useMap();
   const [bounds, setBounds] = useState(mainMap.getBounds());
@@ -49,7 +49,8 @@ function MinimapInner({ mainMap }) {
     if (!mainMap) return;
     const updateMinimap = () => {
       setBounds(mainMap.getBounds());
-      minimap.setView(mainMap.getCenter(), Math.max(1, mainMap.getZoom() - 3));
+      // Radar Zoom dibuat LEBIH DETAIL (hanya selisih -1 dari peta utama)
+      minimap.setView(mainMap.getCenter(), Math.max(1, mainMap.getZoom() - 1));
     };
     mainMap.on('move', updateMinimap);
     mainMap.on('zoom', updateMinimap);
@@ -57,11 +58,11 @@ function MinimapInner({ mainMap }) {
     return () => { mainMap.off('move', updateMinimap); mainMap.off('zoom', updateMinimap); }
   }, [mainMap, minimap]);
 
+  // Klik di radar langsung loncat dan ZOOM IN SUPER DETAIL ke level 16
   useMapEvent('click', (e) => {
-    mainMap.flyTo(e.latlng, mainMap.getZoom(), { animate: true, duration: 0.5 });
+    mainMap.flyTo(e.latlng, 16, { animate: true, duration: 0.8 });
   });
 
-  // Kotak merah dihilangkan, diganti garis putus-putus biru super tipis tanpa warna isi (fillOpacity 0)
   return <Rectangle bounds={bounds} weight={1.5} color="#1a73e8" fillOpacity={0} dashArray="4, 4" />;
 }
 
@@ -70,7 +71,6 @@ function Minimap({ mainMap, mapUrl }) {
   return (
     <div style={{ position: 'absolute', bottom: '10px', right: '55px', width: '150px', height: '150px', zIndex: 1000 }} className="bg-white border-2 border-white rounded-[8px] shadow-[0_1px_5px_rgba(0,0,0,0.65)] overflow-hidden pointer-events-auto transition-transform hover:scale-105 group">
       <MapContainer center={mainMap.getCenter()} zoom={10} zoomControl={false} attributionControl={false} dragging={false} doubleClickZoom={false} scrollWheelZoom={false} touchZoom={false} className="w-full h-full cursor-crosshair">
-        {/* URL TileLayer sekarang dinamis mengikuti pilihan pengguna di peta utama */}
         <TileLayer url={mapUrl} />
         <MinimapInner mainMap={mainMap} />
       </MapContainer>
@@ -497,14 +497,14 @@ export default function App() {
         </div>
       </div>
 
-      {/* TOMBOL RECENTER DITUMPUK DI ATAS ZOOM CONTROL */}
+      {/* TOMBOL RECENTER DITUMPUK DI ATAS ZOOM CONTROL MENGGUNAKAN INLINE STYLE */}
       <div style={{ position: 'absolute', bottom: '85px', right: '10px', zIndex: 1000 }} className="flex flex-col items-end pointer-events-none">
         <button onClick={handleRecenter} className="bg-white w-[34px] h-[34px] flex items-center justify-center rounded-[4px] shadow-[0_1px_5px_rgba(0,0,0,0.65)] text-gray-600 hover:text-[#1a73e8] hover:bg-gray-50 transition-colors pointer-events-auto" title="Pusatkan Layar">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
         </button>
       </div>
 
-      {/* MINIMAP DINAMIS */}
+      {/* MINIMAP RADAR */}
       {mapInstance && <Minimap mainMap={mapInstance} mapUrl={MAP_LAYERS[mapType]} />}
 
       {/* MENU PILIHAN PETA (KLIK) */}

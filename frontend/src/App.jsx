@@ -40,7 +40,7 @@ const MAP_LAYERS = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
 };
 
-// --- KOMPONEN MINIMAP (RADAR DINAMIS & DETAIL) ---
+// --- KOMPONEN MINIMAP (RADAR DINAMIS) ---
 function MinimapInner({ mainMap }) {
   const minimap = useMap();
   const [bounds, setBounds] = useState(mainMap.getBounds());
@@ -49,7 +49,6 @@ function MinimapInner({ mainMap }) {
     if (!mainMap) return;
     const updateMinimap = () => {
       setBounds(mainMap.getBounds());
-      // Radar Zoom dibuat LEBIH DETAIL (hanya selisih -1 dari peta utama)
       minimap.setView(mainMap.getCenter(), Math.max(1, mainMap.getZoom() - 1));
     };
     mainMap.on('move', updateMinimap);
@@ -58,7 +57,6 @@ function MinimapInner({ mainMap }) {
     return () => { mainMap.off('move', updateMinimap); mainMap.off('zoom', updateMinimap); }
   }, [mainMap, minimap]);
 
-  // Klik di radar langsung loncat dan ZOOM IN SUPER DETAIL ke level 16
   useMapEvent('click', (e) => {
     mainMap.flyTo(e.latlng, 16, { animate: true, duration: 0.8 });
   });
@@ -74,7 +72,7 @@ function Minimap({ mainMap, mapUrl }) {
         <TileLayer url={mapUrl} />
         <MinimapInner mainMap={mainMap} />
       </MapContainer>
-      <div className="absolute bottom-0 left-0 w-full bg-white/80 text-center py-1 text-[10px] font-extrabold text-slate-700 tracking-widest z-[1001] pointer-events-none group-hover:bg-[#1a73e8] group-hover:text-white transition-colors">MINIMAP</div>
+      <div className="absolute bottom-0 left-0 w-full bg-white/80 text-center py-1 text-[10px] font-extrabold text-slate-700 tracking-widest z-[1001] pointer-events-none group-hover:bg-[#1a73e8] group-hover:text-white transition-colors uppercase">MINIMAP</div>
     </div>
   );
 }
@@ -85,6 +83,7 @@ export default function App() {
 
   const [ruteData, setRuteData] = useState(null);
   const [halteData, setHalteData] = useState(null);
+  const [kecamatanData, setKecamatanData] = useState(null);
   const [radiusData, setRadiusData] = useState(null);
   const [intersectData, setIntersectData] = useState(null); 
   
@@ -97,6 +96,9 @@ export default function App() {
   const [selectedRouteCode, setSelectedRouteCode] = useState(null);
   const [selectedHalteId, setSelectedHalteId] = useState(null);
   
+  // STATE BARU: Untuk menyimpan ID kecamatan yang sedang aktif/menyala biru
+  const [activeKecamatanId, setActiveKecamatanId] = useState(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
@@ -121,6 +123,7 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  // DIUBAH KE FALSE AGAR PANEL TERTUTUP SAAT REFRESH
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [mapType, setMapType] = useState('modern');
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
@@ -134,6 +137,7 @@ export default function App() {
   useEffect(() => {
     fetchRute();
     fetchHalte();
+    fetchKecamatan();
     
     window.hapusHalte = async (id) => {
       if (window.confirm("Menghapus halte bersifat permanen. Lanjutkan?")) {
@@ -176,6 +180,38 @@ export default function App() {
 
   const fetchRute = async () => { try { const res = await axios.get(`${API_URL}/rute`); setRuteData(res.data); } catch (e) {} };
   const fetchHalte = async () => { try { const res = await axios.get(`${API_URL}/halte`); setHalteData(res.data); } catch (e) {} };
+  const fetchKecamatan = async () => { try { const res = await axios.get(`${API_URL}/kecamatan`); setKecamatanData(res.data); } catch (e) {} };
+
+  const handleKlikKecamatan = async (id, nama, latlng) => {
+    const popup = L.popup({ className: 'custom-popup' })
+      .setLatLng(latlng)
+      .setContent(`<div class="p-2 text-center text-[11px] font-bold text-gray-500 italic">Menganalisis area Kec. ${nama}...</div>`)
+      .openOn(mapInstance);
+
+    try {
+      const res = await axios.get(`${API_URL}/analisis/statistik-kecamatan/${id}`);
+      const d = res.data;
+      
+      popup.setContent(`
+        <div class="font-sans min-w-[200px] p-1.5 text-center">
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Statistik Spasial Wilayah</span>
+          <h4 class="font-extrabold text-gray-800 text-[16px] leading-tight mb-3">Kec. ${d.nama_kecamatan}</h4>
+          <div class="grid grid-cols-2 gap-2 mb-1">
+            <div class="bg-blue-50 border border-blue-100 py-2.5 px-2 rounded-xl shadow-sm">
+              <span class="block text-2xl font-black text-blue-600 leading-none mb-1">${d.jumlah_halte}</span>
+              <span class="text-[9px] font-extrabold text-blue-500 uppercase tracking-widest">Titik Halte</span>
+            </div>
+            <div class="bg-amber-50 border border-amber-100 py-2.5 px-2 rounded-xl shadow-sm">
+              <span class="block text-2xl font-black text-amber-500 leading-none mb-1">${d.jumlah_rute}</span>
+              <span class="text-[9px] font-extrabold text-amber-500 uppercase tracking-widest">Jalur Rute</span>
+            </div>
+          </div>
+        </div>
+      `);
+    } catch (err) {
+      popup.setContent(`<div class="text-[11px] text-red-500 font-bold p-2 text-center">Gagal menghitung data spasial.</div>`);
+    }
+  };
 
   const handleSearchInput = (e) => {
     const query = e.target.value;
@@ -257,6 +293,9 @@ export default function App() {
   const MapEvents = () => {
     useMapEvents({
       click(e) {
+        // RESET HIGHLIGHT KECAMATAN JIKA PETA DIKLIK
+        setActiveKecamatanId(null);
+        
         if (isSelectingPoint) { setSearchPoint(e.latlng); setIsSelectingPoint(false); setRadiusData(null); setIntersectData(null); } 
         else if (activeTab === 'tambah' && isPanelOpen && isAdmin) {
           if (adminTab === 'halte') setFormHalte({ ...formHalte, lat: e.latlng.lat, lon: e.latlng.lng });
@@ -295,7 +334,7 @@ export default function App() {
         </div>
       )}
 
-      {/* SEARCH BAR WIDGET */}
+      {/* SEARCH BAR WIDGET KIRI ATAS (Saat Panel Tertutup) */}
       {!isPanelOpen && (
         <div className="absolute top-5 left-5 z-[1001] transition-all duration-300">
           <button onClick={() => setIsPanelOpen(true)} className="bg-white px-5 py-4 rounded-full shadow-lg flex items-center gap-4 hover:bg-gray-50 transition-all border border-gray-100 w-[380px]">
@@ -307,6 +346,7 @@ export default function App() {
 
       {/* MAIN DASHBOARD PANEL */}
       <div className={`absolute top-5 left-5 z-[1002] w-[420px] bg-white shadow-2xl rounded-3xl border border-gray-100 flex flex-col max-h-[92vh] transition-all duration-400 ease-in-out ${isPanelOpen ? 'translate-x-0 opacity-100' : '-translate-x-[120%] opacity-0'}`}>
+        
         <div className={`px-6 py-5 border-b border-gray-50 flex justify-between items-center rounded-t-3xl ${isAdmin ? 'bg-slate-900 text-white' : 'bg-white'}`}>
           <div className="flex items-center gap-3.5">
             <div className={`p-2.5 rounded-2xl ${isAdmin ? 'bg-slate-800 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
@@ -358,6 +398,25 @@ export default function App() {
                 )}
               </div>
 
+              {/* MENU DAFTAR KECAMATAN */}
+              <div className="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg> Data Kecamatan</p>
+                 <div className="grid grid-cols-2 gap-2">
+                    {kecamatanData?.features.map((k, i) => (
+                       <button key={i} onClick={() => {
+                         // SET EFEK HIGHLIGHT BIRU KETIKA DIKLIK
+                         setActiveKecamatanId(k.properties.id_kecamatan);
+                         
+                         const center = L.geoJSON(k).getBounds().getCenter();
+                         mapInstance.flyTo(center, 14, {animate: true});
+                         handleKlikKecamatan(k.properties.id_kecamatan, k.properties.nama_kecamatan, center);
+                       }} className="text-[11px] font-bold text-gray-600 bg-white border border-gray-200 py-2.5 px-3 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-all text-left truncate shadow-sm">
+                          {k.properties.nama_kecamatan}
+                       </button>
+                    ))}
+                 </div>
+              </div>
+
               <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                 <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-3 flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg> Kalkulator Jarak Halte</p>
                 <div className="flex gap-2 mb-3">
@@ -396,6 +455,7 @@ export default function App() {
                 <button onClick={handleClearRadius} className="bg-white hover:bg-gray-50 text-gray-600 font-bold py-3 px-5 rounded-xl text-sm border border-gray-200">Reset</button>
               </div>
 
+              {/* HASIL RADIUS */}
               {intersectData?.features?.length > 0 && (
                  <div className="mt-2 border border-blue-100 rounded-xl bg-blue-50 px-5 py-4">
                     <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1.5">ST_Intersects</p>
@@ -428,6 +488,7 @@ export default function App() {
                   <button onClick={() => setAdminTab('halte')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${adminTab === 'halte' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Kelola Halte</button>
                   <button onClick={() => setAdminTab('rute')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${adminTab === 'rute' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Kelola Rute</button>
                </div>
+               
                {adminTab === 'halte' ? (
                   <form onSubmit={handleSimpanHalte} className="space-y-4">
                     <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-start gap-2.5 mb-2">
@@ -481,7 +542,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* STATISTIK MENYATU KANAN ATAS */}
+      {/* STATISTIK KANAN ATAS (UI ORIGINAL FIGO) */}
       <div className="absolute top-5 right-5 z-[1000] flex bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden pointer-events-auto">
         <div className="px-6 py-3.5 border-r border-gray-100 flex flex-col justify-center bg-gray-50/50">
            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Sistem Waktu</span>
@@ -497,17 +558,14 @@ export default function App() {
         </div>
       </div>
 
-      {/* TOMBOL RECENTER DITUMPUK DI ATAS ZOOM CONTROL MENGGUNAKAN INLINE STYLE */}
+      {/* TOMBOL RECENTER DITUMPUK DI ATAS ZOOM CONTROL */}
       <div style={{ position: 'absolute', bottom: '85px', right: '10px', zIndex: 1000 }} className="flex flex-col items-end pointer-events-none">
         <button onClick={handleRecenter} className="bg-white w-[34px] h-[34px] flex items-center justify-center rounded-[4px] shadow-[0_1px_5px_rgba(0,0,0,0.65)] text-gray-600 hover:text-[#1a73e8] hover:bg-gray-50 transition-colors pointer-events-auto" title="Pusatkan Layar">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
         </button>
       </div>
 
-      {/* MINIMAP RADAR */}
-      {mapInstance && <Minimap mainMap={mapInstance} mapUrl={MAP_LAYERS[mapType]} />}
-
-      {/* MENU PILIHAN PETA (KLIK) */}
+      {/* MENU PILIHAN PETA (TEMA) */}
       <div className="absolute bottom-6 left-5 z-[1000] flex flex-col justify-end items-start pointer-events-none">
         <div className={`bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/60 overflow-hidden flex flex-col font-medium text-xs text-gray-700 transition-all duration-300 transform origin-bottom-left mb-3 w-48 ${isLayerMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
           <div className="p-3 bg-gray-50/80 border-b border-gray-100 font-bold text-[10px] uppercase tracking-widest text-gray-500 flex justify-between items-center">
@@ -525,20 +583,63 @@ export default function App() {
         </button>
       </div>
 
+      {/* MINIMAP RADAR */}
+      {mapInstance && <Minimap mainMap={mapInstance} mapUrl={MAP_LAYERS[mapType]} />}
+
       {/* MAP ENGINE PUSAT */}
       <MapContainer center={[-6.225, 106.90]} zoom={13} zoomControl={false} attributionControl={false} className="w-full h-full z-0" ref={setMapInstance}>
         <TileLayer url={MAP_LAYERS[mapType]} />
         <ZoomControl position="bottomright" />
         <MapEvents />
 
+        {/* --- LAYER KECAMATAN (DENGAN EFEK BIRU MENYALA) --- */}
+        {kecamatanData && (
+          <GeoJSON 
+            key={`layer-kecamatan-${mapType}`}
+            data={kecamatanData} 
+            style={(f) => {
+              // Jika ID kecamatan ini cocok dengan state yang sedang di-klik, buat dia BIRU!
+              const isActive = f.properties.id_kecamatan === activeKecamatanId;
+              return {
+                color: isActive ? '#3b82f6' : (mapType === 'dark' ? '#94a3b8' : '#64748b'),
+                weight: isActive ? 3 : 1.5,
+                fillColor: isActive ? '#3b82f6' : '#94a3b8',
+                fillOpacity: isActive ? 0.2 : 0.05,
+                dashArray: '4, 4'
+              };
+            }}
+            onEachFeature={(f, l) => {
+              l.on({
+                mouseover: (e) => { 
+                  // Kalau lagi nyala biru, jangan ditimpa warnanya saat di-hover
+                  if (f.properties.id_kecamatan !== activeKecamatanId) {
+                    e.target.setStyle({ fillOpacity: 0.1, color: '#3b82f6', weight: 2.5 }); 
+                  }
+                },
+                mouseout: (e) => { 
+                  // Kalau lagi nyala biru, biarkan dia tetap biru saat mouse pergi
+                  if (f.properties.id_kecamatan !== activeKecamatanId) {
+                    e.target.setStyle({ fillOpacity: 0.05, color: mapType === 'dark' ? '#94a3b8' : '#64748b', weight: 1.5 }); 
+                  }
+                }
+                // FUNGSI KLIK TIDAK ADA AGAR TIDAK GANGGU. 
+                // Klik hanya lewat menu sebelah kiri.
+              });
+            }}
+          />
+        )}
+
+        {/* 2. LAYER PENGUKURAN JARAK */}
         {measureStart && measureEnd && (
           <Polyline positions={[[measureStart.lat, measureStart.lon], [measureEnd.lat, measureEnd.lon]]} color="#4f46e5" weight={5} dashArray="10, 10" opacity={0.8} />
         )}
 
+        {/* 3. PREVIEW ADMIN RUTE */}
         {newRoutePoints.length > 0 && (
           <Polyline positions={newRoutePoints.map(p => [p[1], p[0]])} color={formRute.warna_jalur} weight={6} dashArray="8, 12" />
         )}
 
+        {/* 4. LAYER RUTE ANGKUTAN */}
         {ruteData && <GeoJSON 
           key={`rute-${selectedRouteCode}-${intersectData ? '1' : '0'}`} 
           data={ruteData} 
@@ -584,7 +685,7 @@ export default function App() {
           }} 
         />}
 
-        {/* LAYER HALTE DI-RENDER LANGSUNG SECARA PENUH */}
+        {/* 5. LAYER HALTE */}
         {halteData && halteData.features.filter(f => !highlightedHalteIds.includes(f.properties.id_halte)).map((f, idx) => {
           const p = f.properties;
           const latlng = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
@@ -622,9 +723,7 @@ export default function App() {
           );
         })}
 
-        {searchPoint && <Circle center={searchPoint} radius={radiusMeter} pathOptions={{ fillColor: '#1a73e8', color: '#1a73e8', weight: 2, fillOpacity: 0.1, dashArray: '6, 6' }} />}
-        
-        {/* RADIUS TARGET HALTE (Warna Merah) */}
+        {/* 6. LAYER HALTE AREA RADIUS (Warna Merah) */}
         {radiusData && radiusData.features.map((f, idx) => {
            const p = f.properties;
            const latlng = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
@@ -646,6 +745,9 @@ export default function App() {
              </Marker>
            )
         })}
+
+        {/* RADIUS CIRCLE */}
+        {searchPoint && <Circle center={searchPoint} radius={radiusMeter} pathOptions={{ fillColor: '#1a73e8', color: '#1a73e8', weight: 2, fillOpacity: 0.1, dashArray: '6, 6' }} />}
       </MapContainer>
 
       <style>{`

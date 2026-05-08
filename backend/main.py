@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, cast
+from sqlalchemy import func, cast, text  # <-- text ditambahkan di sini
 from geoalchemy2 import Geography
 from pydantic import BaseModel
 import json
@@ -298,6 +298,41 @@ def hitung_panjang_rute(kode_rute: str, db: Session = Depends(get_db)):
         "panjang_km": round(hasil.panjang_meter / 1000, 2)
     }
 
+# D. ST_Contains & ST_Intersects (Statistik Kecamatan)
+@app.get("/api/analisis/statistik-kecamatan/{id_kecamatan}")
+def statistik_kecamatan(id_kecamatan: int, db: Session = Depends(get_db)):
+    """
+    Menghitung jumlah halte dan rute yang ada di dalam sebuah kecamatan
+    menggunakan query spasial.
+    """
+    # 1. Cari nama kecamatannya dulu
+    kec = db.execute(text("SELECT name FROM kecamatan_jaktim_polygon WHERE id = :id"), {"id": id_kecamatan}).first()
+    if not kec:
+        raise HTTPException(status_code=404, detail="Kecamatan tidak ditemukan")
+    
+    # 2. Hitung Halte (ST_Contains: Titik Halte yang berada DI DALAM Poligon Kecamatan)
+    q_halte = text("""
+        SELECT COUNT(*) FROM halte h
+        JOIN kecamatan_jaktim_polygon k ON ST_Contains(k.geom, h.geom)
+        WHERE k.id = :id
+    """)
+    jml_halte = db.execute(q_halte, {"id": id_kecamatan}).scalar()
+
+    # 3. Hitung Rute (ST_Intersects: Garis Rute yang MEMOTONG/MELINTASI Poligon Kecamatan)
+    q_rute = text("""
+        SELECT COUNT(DISTINCT r.id_rute) FROM rute r
+        JOIN kecamatan_jaktim_polygon k ON ST_Intersects(k.geom, r.geom)
+        WHERE k.id = :id
+    """)
+    jml_rute = db.execute(q_rute, {"id": id_kecamatan}).scalar()
+
+    return {
+        "id_kecamatan": id_kecamatan,
+        "nama_kecamatan": kec.name, # Mengambil kolom 'name' dari database
+        "jumlah_halte": jml_halte,
+        "jumlah_rute": jml_rute
+    }
+
 # TAHAP 1: Endpoint Hitung Jarak (ST_Distance)
 @app.get("/api/analisis/jarak-halte/{id_halte_1}/{id_halte_2}")
 def hitung_jarak_antar_halte(id_halte_1: int, id_halte_2: int, db: Session = Depends(get_db)):
@@ -327,4 +362,71 @@ def hitung_jarak_antar_halte(id_halte_1: int, id_halte_2: int, db: Session = Dep
         "halte_2": hasil.nama_halte_2,
         "jarak_meter": round(hasil.jarak_meter, 2),
         "jarak_km": round(hasil.jarak_meter / 1000, 2)
+    }
+
+
+# ==========================================
+# 5. ENDPOINTS: WILAYAH ADMINISTRASI (KECAMATAN)
+# ==========================================
+@app.get("/api/kecamatan")
+def get_kecamatan(db: Session = Depends(get_db)):
+    query = text("""
+        SELECT 
+            id, 
+            name AS nama_kecamatan, 
+            ST_AsGeoJSON(geom::geometry)::json AS geometry 
+        FROM kecamatan_jaktim_polygon
+        WHERE name IS NOT NULL
+    """)
+    result = db.execute(query).fetchall()
+    
+    features = []
+    for row in result:
+        features.append({
+            "type": "Feature",
+            "properties": {"id_kecamatan": row.id, "nama_kecamatan": row.nama_kecamatan},
+            "geometry": row.geometry
+        })
+    return {"type": "FeatureCollection", "features": features}
+
+import traceback
+from fastapi.responses import JSONResponse
+
+# ==========================================
+# 6. ENDPOINT: STATISTIK SPASIAL KECAMATAN
+# ==========================================
+@app.get("/api/analisis/statistik-kecamatan/{id_kecamatan:path}")
+def statistik_kecamatan(id_kecamatan: str, db: Session = Depends(get_db)):
+    # 1. Cari data kecamatan
+    kec = db.execute(text("SELECT name FROM kecamatan_jaktim_polygon WHERE id = :id"), {"id": id_kecamatan}).first()
+    if not kec:
+        raise HTTPException(status_code=404, detail="Kecamatan tidak ditemukan")
+    
+    # 2. Hitung Halte (Paksa koordinat ke 4326 agar tidak muncul angka 0)
+    q_halte = text("""
+        SELECT COUNT(*) FROM tabel_halte_final h
+        WHERE ST_Intersects(
+            ST_Transform(ST_SetSRID(h.geom::geometry, 4326), 4326),
+            (SELECT ST_Transform(ST_SetSRID(geom::geometry, 4326), 4326) 
+             FROM kecamatan_jaktim_polygon WHERE id = :id)
+        )
+    """)
+    jml_halte = db.execute(q_halte, {"id": id_kecamatan}).scalar()
+
+    # 3. Hitung Rute
+    q_rute = text("""
+        SELECT COUNT(DISTINCT r.id_rute) FROM tabel_rute_final r
+        WHERE ST_Intersects(
+            ST_Transform(ST_SetSRID(r.geom::geometry, 4326), 4326),
+            (SELECT ST_Transform(ST_SetSRID(geom::geometry, 4326), 4326) 
+             FROM kecamatan_jaktim_polygon WHERE id = :id)
+        )
+    """)
+    jml_rute = db.execute(q_rute, {"id": id_kecamatan}).scalar()
+
+    return {
+        "id_kecamatan": id_kecamatan,
+        "nama_kecamatan": kec.name if kec.name else "Area",
+        "jumlah_halte": jml_halte or 0,
+        "jumlah_rute": jml_rute or 0
     }

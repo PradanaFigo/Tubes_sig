@@ -10,7 +10,7 @@ class HalteCreate(BaseModel):
     tipe_halte: Optional[str] = "platform"
     rute_terhubung: Optional[str] = None
     fasilitas_shelter: Optional[str] = "yes"
-    id_admin: int = 1  # Otomatis masuk ke admin_utama
+    id_admin: Optional[int] = 1  # Dibuat Optional
     lat: float = Field(..., description="Latitude titik halte")
     lon: float = Field(..., description="Longitude titik halte")
 
@@ -30,12 +30,11 @@ class RuteCreate(BaseModel):
     kode_rute: str
     jenis_angkutan: str
     nama_rute: str
-    rute_awal: str
-    rute_akhir: str
+    rute_awal: Optional[str] = ""  # Dibuat Optional agar aman
+    rute_akhir: Optional[str] = "" # Dibuat Optional agar aman
     warna_jalur: Optional[str] = "#000000"
     jam_operasional: Optional[str] = "05:00-22:00"
-    id_admin: int = 1  # Otomatis masuk ke admin_utama
-    # Menggunakan geojson_geom agar sinkron dengan output React Leaflet Draw
+    id_admin: Optional[int] = 1    # Dibuat Optional
     geojson_geom: str = Field(..., description="String GeoJSON dari LineString Rute")
 
 class RuteUpdate(BaseModel):

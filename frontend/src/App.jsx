@@ -40,7 +40,7 @@ const MAP_LAYERS = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
 };
 
-// --- KOMPONEN MINIMAP (RADAR DINAMIS) ---
+// --- KOMPONEN MINIMAP ---
 function MinimapInner({ mainMap }) {
   const minimap = useMap();
   const [bounds, setBounds] = useState(mainMap.getBounds());
@@ -87,6 +87,10 @@ export default function App() {
   const [radiusData, setRadiusData] = useState(null);
   const [intersectData, setIntersectData] = useState(null); 
   
+  // STATE FILTER TAMPILAN PETA (BARU DITAMBAHKAN KEMBALI)
+  const [showHalte, setShowHalte] = useState(true);
+  const [showRute, setShowRute] = useState(true);
+
   const [searchPoint, setSearchPoint] = useState(null);
   const [radiusMeter, setRadiusMeter] = useState(1000);
   const [activeTab, setActiveTab] = useState('analisis');
@@ -95,8 +99,6 @@ export default function App() {
   
   const [selectedRouteCode, setSelectedRouteCode] = useState(null);
   const [selectedHalteId, setSelectedHalteId] = useState(null);
-  
-  // STATE BARU: Untuk menyimpan ID kecamatan yang sedang aktif/menyala biru
   const [activeKecamatanId, setActiveKecamatanId] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,7 +113,7 @@ export default function App() {
   useEffect(() => { measureModeRef.current = measureMode; }, [measureMode]);
 
   const [editHalteId, setEditHalteId] = useState(null);
-  const [formHalte, setFormHalte] = useState({ kode_halte: '', nama_halte: '', alamat: '', tipe_halte: 'Shelter', fasilitas: '', rute_terhubung: '', lat: '', lon: '' });
+  const [formHalte, setFormHalte] = useState({ kode_halte: '', nama_halte: '', alamat: '', tipe_halte: 'Shelter BRT', fasilitas: '', rute_terhubung: '', lat: '', lon: '' });
 
   const [editRuteId, setEditRuteId] = useState(null);
   const [formRute, setFormRute] = useState({ kode_rute: '', jenis_angkutan: 'TransJakarta', nama_rute: '', rute_awal: '', rute_akhir: '', jam_operasional: '05:00-22:00', warna_jalur: '#1a73e8' });
@@ -123,7 +125,6 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  // DIUBAH KE FALSE AGAR PANEL TERTUTUP SAAT REFRESH
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [mapType, setMapType] = useState('modern');
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
@@ -183,6 +184,8 @@ export default function App() {
   const fetchKecamatan = async () => { try { const res = await axios.get(`${API_URL}/kecamatan`); setKecamatanData(res.data); } catch (e) {} };
 
   const handleKlikKecamatan = async (id, nama, latlng) => {
+    if (isSelectingPoint || (activeTab === 'tambah' && isAdmin)) return;
+
     const popup = L.popup({ className: 'custom-popup' })
       .setLatLng(latlng)
       .setContent(`<div class="p-2 text-center text-[11px] font-bold text-gray-500 italic">Menganalisis area Kec. ${nama}...</div>`)
@@ -190,19 +193,19 @@ export default function App() {
 
     try {
       const res = await axios.get(`${API_URL}/analisis/statistik-kecamatan/${id}`);
-      const d = res.data;
-      
+      const data = res.data;
+
       popup.setContent(`
         <div class="font-sans min-w-[200px] p-1.5 text-center">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Statistik Spasial Wilayah</span>
-          <h4 class="font-extrabold text-gray-800 text-[16px] leading-tight mb-3">Kec. ${d.nama_kecamatan}</h4>
+          <h4 class="font-extrabold text-gray-800 text-[16px] leading-tight mb-3">Kec. ${data.nama_kecamatan}</h4>
           <div class="grid grid-cols-2 gap-2 mb-1">
             <div class="bg-blue-50 border border-blue-100 py-2.5 px-2 rounded-xl shadow-sm">
-              <span class="block text-2xl font-black text-blue-600 leading-none mb-1">${d.jumlah_halte}</span>
+              <span class="block text-2xl font-black text-blue-600 leading-none mb-1">${data.jumlah_halte}</span>
               <span class="text-[9px] font-extrabold text-blue-500 uppercase tracking-widest">Titik Halte</span>
             </div>
             <div class="bg-amber-50 border border-amber-100 py-2.5 px-2 rounded-xl shadow-sm">
-              <span class="block text-2xl font-black text-amber-500 leading-none mb-1">${d.jumlah_rute}</span>
+              <span class="block text-2xl font-black text-amber-500 leading-none mb-1">${data.jumlah_rute}</span>
               <span class="text-[9px] font-extrabold text-amber-500 uppercase tracking-widest">Jalur Rute</span>
             </div>
           </div>
@@ -269,23 +272,73 @@ export default function App() {
   const handleSimpanHalte = async (e) => {
     e.preventDefault();
     try {
-      if (editHalteId) { await axios.put(`${API_URL}/halte/${editHalteId}`, formHalte); alert("Data Halte berhasil diperbarui!"); } 
-      else { await axios.post(`${API_URL}/halte`, formHalte); alert("Data Halte berhasil ditambahkan!"); }
-      fetchHalte(); setEditHalteId(null);
-      setFormHalte({ kode_halte: '', nama_halte: '', alamat: '', tipe_halte: 'Shelter', fasilitas: '', rute_terhubung: '', lat: '', lon: '' });
-    } catch (e) { alert("Gagal menyimpan data halte."); }
+      const payload = {
+        nama_halte: formHalte.nama_halte,
+        alamat_jalan: formHalte.alamat || "",       
+        tipe_halte: formHalte.tipe_halte || "Shelter BRT",
+        rute_terhubung: formHalte.rute_terhubung || "",
+        fasilitas_shelter: formHalte.fasilitas || "", 
+        lat: parseFloat(formHalte.lat),             
+        lon: parseFloat(formHalte.lon),             
+        id_admin: 1                                 
+      };
+
+      if (isNaN(payload.lat) || isNaN(payload.lon)) {
+        return alert("Klik pada peta untuk mendapatkan titik koordinat latitude & longitude terlebih dahulu!");
+      }
+
+      if (editHalteId) { 
+        await axios.put(`${API_URL}/halte/${editHalteId}`, payload); 
+        alert("Data Halte berhasil diperbarui!"); 
+      } else { 
+        await axios.post(`${API_URL}/halte`, payload); 
+        alert("Data Halte berhasil ditambahkan!"); 
+      }
+      
+      fetchHalte(); 
+      setEditHalteId(null);
+      setFormHalte({ kode_halte: '', nama_halte: '', alamat: '', tipe_halte: 'Shelter BRT', fasilitas: '', rute_terhubung: '', lat: '', lon: '' });
+    } catch (e) { 
+      let errMsg = e.response?.data?.detail || e.message;
+      if (typeof errMsg !== 'string') errMsg = JSON.stringify(errMsg);
+      alert(`GAGAL MENYIMPAN HALTE!\n\nAlasan: ${errMsg}\n\nPastikan di Database (tabel admin_users) sudah ada admin dengan id_admin = 1!`);
+      console.error(e); 
+    }
   };
 
   const handleSimpanRute = async (e) => {
     e.preventDefault();
     if (newRoutePoints.length < 2) return alert("Gambarkan rute di peta minimal 2 titik koordinat!");
-    const payload = { ...formRute, geojson_geom: JSON.stringify({ type: "LineString", coordinates: newRoutePoints }) };
+    
+    const payload = { 
+      kode_rute: formRute.kode_rute,
+      jenis_angkutan: formRute.jenis_angkutan || "TransJakarta",
+      nama_rute: formRute.nama_rute,
+      rute_awal: formRute.rute_awal || "",
+      rute_akhir: formRute.rute_akhir || "",
+      jam_operasional: formRute.jam_operasional || "05:00-22:00",
+      warna_jalur: formRute.warna_jalur || "#1a73e8",
+      geojson_geom: JSON.stringify({ type: "LineString", coordinates: newRoutePoints }),
+      id_admin: 1 
+    };
+
     try {
-      if (editRuteId) { await axios.put(`${API_URL}/rute/${editRuteId}`, payload); alert("Data Rute berhasil diperbarui!"); } 
-      else { await axios.post(`${API_URL}/rute`, payload); alert("Data Rute berhasil ditambahkan!"); }
-      fetchRute(); setEditRuteId(null); setNewRoutePoints([]);
+      if (editRuteId) { 
+        await axios.put(`${API_URL}/rute/${editRuteId}`, payload); 
+        alert("Data Rute berhasil diperbarui!"); 
+      } else { 
+        await axios.post(`${API_URL}/rute`, payload); 
+        alert("Data Rute berhasil ditambahkan!"); 
+      }
+      fetchRute(); 
+      setEditRuteId(null); setNewRoutePoints([]);
       setFormRute({ kode_rute: '', jenis_angkutan: 'TransJakarta', nama_rute: '', rute_awal: '', rute_akhir: '', jam_operasional: '05:00-22:00', warna_jalur: '#1a73e8' });
-    } catch (e) { alert("Gagal menyimpan data rute."); }
+    } catch (e) { 
+      let errMsg = e.response?.data?.detail || e.message;
+      if (typeof errMsg !== 'string') errMsg = JSON.stringify(errMsg);
+      alert(`GAGAL MENYIMPAN RUTE!\n\nAlasan: ${errMsg}`);
+      console.error(e); 
+    }
   };
 
   const handleRecenter = () => { if (mapInstance) mapInstance.setView([-6.225, 106.90], 13, {animate: true}); };
@@ -293,8 +346,7 @@ export default function App() {
   const MapEvents = () => {
     useMapEvents({
       click(e) {
-        // RESET HIGHLIGHT KECAMATAN JIKA PETA DIKLIK
-        setActiveKecamatanId(null);
+        setActiveKecamatanId(null); 
         
         if (isSelectingPoint) { setSearchPoint(e.latlng); setIsSelectingPoint(false); setRadiusData(null); setIntersectData(null); } 
         else if (activeTab === 'tambah' && isPanelOpen && isAdmin) {
@@ -334,7 +386,7 @@ export default function App() {
         </div>
       )}
 
-      {/* SEARCH BAR WIDGET KIRI ATAS (Saat Panel Tertutup) */}
+      {/* SEARCH BAR WIDGET (Saat Panel Tertutup) */}
       {!isPanelOpen && (
         <div className="absolute top-5 left-5 z-[1001] transition-all duration-300">
           <button onClick={() => setIsPanelOpen(true)} className="bg-white px-5 py-4 rounded-full shadow-lg flex items-center gap-4 hover:bg-gray-50 transition-all border border-gray-100 w-[380px]">
@@ -346,7 +398,6 @@ export default function App() {
 
       {/* MAIN DASHBOARD PANEL */}
       <div className={`absolute top-5 left-5 z-[1002] w-[420px] bg-white shadow-2xl rounded-3xl border border-gray-100 flex flex-col max-h-[92vh] transition-all duration-400 ease-in-out ${isPanelOpen ? 'translate-x-0 opacity-100' : '-translate-x-[120%] opacity-0'}`}>
-        
         <div className={`px-6 py-5 border-b border-gray-50 flex justify-between items-center rounded-t-3xl ${isAdmin ? 'bg-slate-900 text-white' : 'bg-white'}`}>
           <div className="flex items-center gap-3.5">
             <div className={`p-2.5 rounded-2xl ${isAdmin ? 'bg-slate-800 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
@@ -359,7 +410,7 @@ export default function App() {
           </div>
           <div className="flex gap-1.5">
             <button onClick={() => isAdmin ? setIsAdmin(false) : setShowAuthModal(true)} className={`rounded-xl p-2.5 transition-colors ${isAdmin ? 'text-slate-400 hover:text-white bg-slate-800' : 'text-gray-400 hover:text-blue-600 bg-gray-50 hover:bg-blue-50'}`}>
-              {isAdmin ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>}
+              {isAdmin ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>}
             </button>
             <button onClick={() => setIsPanelOpen(false)} className={`rounded-xl p-2.5 transition-colors ${isAdmin ? 'text-slate-400 hover:text-white bg-slate-800' : 'text-gray-400 hover:text-gray-800 bg-gray-50 hover:bg-gray-200'}`}>
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -381,8 +432,19 @@ export default function App() {
                   <input type="text" placeholder="Telusuri Halte & Rute..." className="w-full bg-transparent text-sm outline-none font-medium text-gray-700" value={searchQuery} onChange={handleSearchInput} />
                   {searchQuery && <button onClick={() => {setSearchQuery(''); setSearchResults([]); setSelectedRouteCode(null); setSelectedHalteId(null);}} className="text-gray-400 hover:text-red-500"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>}
                 </div>
+
+                {/* --- FILTER TAMPILAN PETA --- */}
+                <div className="flex gap-2 mt-4">
+                  <button onClick={() => setShowHalte(!showHalte)} className={`flex-1 py-2 text-xs font-bold rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${showHalte ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                    <div className={`w-2.5 h-2.5 rounded-full ${showHalte ? 'bg-blue-500' : 'bg-gray-300'}`}></div> Halte
+                  </button>
+                  <button onClick={() => setShowRute(!showRute)} className={`flex-1 py-2 text-xs font-bold rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${showRute ? 'bg-amber-50 border-amber-500 text-amber-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                    <div className={`w-2.5 h-2.5 rounded-full ${showRute ? 'bg-amber-500' : 'bg-gray-300'}`}></div> Rute
+                  </button>
+                </div>
+
                 {searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-50">
                     {searchResults.map((item, idx) => (
                       <button key={idx} onClick={() => handleSelectSearchResult(item)} className="w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-blue-50 flex items-center gap-3">
                         <div className={`p-1.5 rounded-lg shrink-0 ${item.resultType === 'halte' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
@@ -404,9 +466,7 @@ export default function App() {
                  <div className="grid grid-cols-2 gap-2">
                     {kecamatanData?.features.map((k, i) => (
                        <button key={i} onClick={() => {
-                         // SET EFEK HIGHLIGHT BIRU KETIKA DIKLIK
                          setActiveKecamatanId(k.properties.id_kecamatan);
-                         
                          const center = L.geoJSON(k).getBounds().getCenter();
                          mapInstance.flyTo(center, 14, {animate: true});
                          handleKlikKecamatan(k.properties.id_kecamatan, k.properties.nama_kecamatan, center);
@@ -542,7 +602,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* STATISTIK KANAN ATAS (UI ORIGINAL FIGO) */}
+      {/* STATISTIK MENYATU KANAN ATAS */}
       <div className="absolute top-5 right-5 z-[1000] flex bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden pointer-events-auto">
         <div className="px-6 py-3.5 border-r border-gray-100 flex flex-col justify-center bg-gray-50/50">
            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Sistem Waktu</span>
@@ -592,13 +652,12 @@ export default function App() {
         <ZoomControl position="bottomright" />
         <MapEvents />
 
-        {/* --- LAYER KECAMATAN (DENGAN EFEK BIRU MENYALA) --- */}
+        {/* --- LAYER KECAMATAN DENGAN HIGHLIGHT BIRU --- */}
         {kecamatanData && (
           <GeoJSON 
             key={`layer-kecamatan-${mapType}`}
             data={kecamatanData} 
             style={(f) => {
-              // Jika ID kecamatan ini cocok dengan state yang sedang di-klik, buat dia BIRU!
               const isActive = f.properties.id_kecamatan === activeKecamatanId;
               return {
                 color: isActive ? '#3b82f6' : (mapType === 'dark' ? '#94a3b8' : '#64748b'),
@@ -611,19 +670,15 @@ export default function App() {
             onEachFeature={(f, l) => {
               l.on({
                 mouseover: (e) => { 
-                  // Kalau lagi nyala biru, jangan ditimpa warnanya saat di-hover
                   if (f.properties.id_kecamatan !== activeKecamatanId) {
                     e.target.setStyle({ fillOpacity: 0.1, color: '#3b82f6', weight: 2.5 }); 
                   }
                 },
                 mouseout: (e) => { 
-                  // Kalau lagi nyala biru, biarkan dia tetap biru saat mouse pergi
                   if (f.properties.id_kecamatan !== activeKecamatanId) {
                     e.target.setStyle({ fillOpacity: 0.05, color: mapType === 'dark' ? '#94a3b8' : '#64748b', weight: 1.5 }); 
                   }
                 }
-                // FUNGSI KLIK TIDAK ADA AGAR TIDAK GANGGU. 
-                // Klik hanya lewat menu sebelah kiri.
               });
             }}
           />
@@ -639,8 +694,8 @@ export default function App() {
           <Polyline positions={newRoutePoints.map(p => [p[1], p[0]])} color={formRute.warna_jalur} weight={6} dashArray="8, 12" />
         )}
 
-        {/* 4. LAYER RUTE ANGKUTAN */}
-        {ruteData && <GeoJSON 
+        {/* 4. LAYER RUTE ANGKUTAN (BERDASARKAN FILTER) */}
+        {showRute && ruteData && <GeoJSON 
           key={`rute-${selectedRouteCode}-${intersectData ? '1' : '0'}`} 
           data={ruteData} 
           style={(f) => {
@@ -685,8 +740,8 @@ export default function App() {
           }} 
         />}
 
-        {/* 5. LAYER HALTE */}
-        {halteData && halteData.features.filter(f => !highlightedHalteIds.includes(f.properties.id_halte)).map((f, idx) => {
+        {/* 5. LAYER HALTE (BERDASARKAN FILTER) */}
+        {showHalte && halteData && halteData.features.filter(f => !highlightedHalteIds.includes(f.properties.id_halte)).map((f, idx) => {
           const p = f.properties;
           const latlng = [f.geometry.coordinates[1], f.geometry.coordinates[0]];
           const isSelected = p.id_halte === selectedHalteId;

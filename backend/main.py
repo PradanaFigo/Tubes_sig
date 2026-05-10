@@ -1,10 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, cast, text  # <-- text ditambahkan di sini
+from sqlalchemy import func, cast, text
 from geoalchemy2 import Geography
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 import json
 import hashlib
+import traceback
 
 import models, schemas
 from database import engine, get_db
@@ -15,7 +17,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="WebGIS Transportasi API",
     description="API untuk manajemen data Halte dan Rute Angkutan Umum dengan format GeoJSON.",
-    version="2.5.0"
+    version="3.0.0"
 )
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,7 +42,6 @@ def hash_password(password: str):
 # ==========================================
 # 1. ENDPOINTS: AUTHENTICATION (AKUN ADMIN)
 # ==========================================
-
 @app.post("/api/auth/register")
 def register_admin(data: AdminAuth, db: Session = Depends(get_db)):
     existing_user = db.query(models.Admin).filter(models.Admin.username == data.username).first()
@@ -67,27 +68,30 @@ def login_admin(data: AdminAuth, db: Session = Depends(get_db)):
     
     return {"message": "Login berhasil", "id_admin": admin.id_admin, "username": admin.username}
 
-
 # ==========================================
 # 2. ENDPOINTS: HALTE (Full CRUD)
 # ==========================================
-
 @app.post("/api/halte")
 def create_halte(halte: schemas.HalteCreate, db: Session = Depends(get_db)):
-    point_wkt = f"SRID=4326;POINT({halte.lon} {halte.lat})"
-    
-    db_halte = models.Halte(
-        nama_halte=halte.nama_halte,
-        alamat_jalan=halte.alamat_jalan,
-        tipe_halte=halte.tipe_halte,
-        rute_terhubung=halte.rute_terhubung,
-        fasilitas_shelter=halte.fasilitas_shelter,
-        id_admin=halte.id_admin if hasattr(halte, 'id_admin') else 1, 
-        geom=func.ST_GeomFromEWKT(point_wkt)
-    )
-    db.add(db_halte)
-    db.commit()
-    return {"message": "Data Halte berhasil ditambahkan"}
+    try:
+        point_wkt = f"SRID=4326;POINT({halte.lon} {halte.lat})"
+        
+        db_halte = models.Halte(
+            nama_halte=halte.nama_halte,
+            alamat_jalan=halte.alamat_jalan,
+            tipe_halte=halte.tipe_halte,
+            rute_terhubung=halte.rute_terhubung,
+            fasilitas_shelter=halte.fasilitas_shelter,
+            id_admin=halte.id_admin if hasattr(halte, 'id_admin') and halte.id_admin else 1, 
+            geom=func.ST_GeomFromEWKT(point_wkt)
+        )
+        db.add(db_halte)
+        db.commit()
+        return {"message": "Data Halte berhasil ditambahkan"}
+    except Exception as e:
+        db.rollback()
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e.__dict__.get('orig', e))}")
 
 @app.get("/api/halte")
 def get_semua_halte(db: Session = Depends(get_db)):
@@ -112,26 +116,28 @@ def get_semua_halte(db: Session = Depends(get_db)):
         })
     return {"type": "FeatureCollection", "features": features}
 
-# TAHAP 2: UPDATE HALTE
 @app.put("/api/halte/{id_halte}")
 def update_halte(id_halte: int, data: schemas.HalteUpdate, db: Session = Depends(get_db)):
-    halte = db.query(models.Halte).filter(models.Halte.id_halte == id_halte).first()
-    if not halte:
-        raise HTTPException(status_code=404, detail="Halte tidak ditemukan")
-    
-    if data.nama_halte is not None: halte.nama_halte = data.nama_halte
-    if data.alamat_jalan is not None: halte.alamat_jalan = data.alamat_jalan
-    if data.tipe_halte is not None: halte.tipe_halte = data.tipe_halte
-    if data.rute_terhubung is not None: halte.rute_terhubung = data.rute_terhubung
-    if data.fasilitas_shelter is not None: halte.fasilitas_shelter = data.fasilitas_shelter
-    
-    # Update koordinat jika dikirim
-    if data.lat is not None and data.lon is not None:
-        point_wkt = f"SRID=4326;POINT({data.lon} {data.lat})"
-        halte.geom = func.ST_GeomFromEWKT(point_wkt)
+    try:
+        halte = db.query(models.Halte).filter(models.Halte.id_halte == id_halte).first()
+        if not halte:
+            raise HTTPException(status_code=404, detail="Halte tidak ditemukan")
+        
+        if data.nama_halte is not None: halte.nama_halte = data.nama_halte
+        if data.alamat_jalan is not None: halte.alamat_jalan = data.alamat_jalan
+        if data.tipe_halte is not None: halte.tipe_halte = data.tipe_halte
+        if data.rute_terhubung is not None: halte.rute_terhubung = data.rute_terhubung
+        if data.fasilitas_shelter is not None: halte.fasilitas_shelter = data.fasilitas_shelter
+        
+        if data.lat is not None and data.lon is not None:
+            point_wkt = f"SRID=4326;POINT({data.lon} {data.lat})"
+            halte.geom = func.ST_GeomFromEWKT(point_wkt)
 
-    db.commit()
-    return {"message": "Data Halte berhasil diperbarui"}
+        db.commit()
+        return {"message": "Data Halte berhasil diperbarui"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e.__dict__.get('orig', e)))
 
 @app.delete("/api/halte/{id_halte}")
 def delete_halte(id_halte: int, db: Session = Depends(get_db)):
@@ -146,27 +152,29 @@ def delete_halte(id_halte: int, db: Session = Depends(get_db)):
 # ==========================================
 # 3. ENDPOINTS: RUTE (Full CRUD)
 # ==========================================
-
-# TAHAP 2: CREATE RUTE
 @app.post("/api/rute")
 def create_rute(data: schemas.RuteCreate, db: Session = Depends(get_db)):
-    # Convert string GeoJSON to PostGIS Geometry
-    geom_data = func.ST_SetSRID(func.ST_GeomFromGeoJSON(data.geojson_geom), 4326)
-    
-    db_rute = models.Rute(
-        kode_rute=data.kode_rute,
-        jenis_angkutan=data.jenis_angkutan,
-        nama_rute=data.nama_rute,
-        rute_awal=data.rute_awal,
-        rute_akhir=data.rute_akhir,
-        jam_operasional=data.jam_operasional,
-        warna_jalur=data.warna_jalur,
-        id_admin=data.id_admin,
-        geom=geom_data
-    )
-    db.add(db_rute)
-    db.commit()
-    return {"message": "Data Rute berhasil ditambahkan"}
+    try:
+        geom_data = func.ST_SetSRID(func.ST_GeomFromGeoJSON(data.geojson_geom), 4326)
+        
+        db_rute = models.Rute(
+            kode_rute=data.kode_rute,
+            jenis_angkutan=data.jenis_angkutan,
+            nama_rute=data.nama_rute,
+            rute_awal=data.rute_awal,
+            rute_akhir=data.rute_akhir,
+            jam_operasional=data.jam_operasional,
+            warna_jalur=data.warna_jalur,
+            id_admin=data.id_admin if hasattr(data, 'id_admin') and data.id_admin else 1,
+            geom=geom_data
+        )
+        db.add(db_rute)
+        db.commit()
+        return {"message": "Data Rute berhasil ditambahkan"}
+    except Exception as e:
+        db.rollback()
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e.__dict__.get('orig', e))}")
 
 @app.get("/api/rute")
 def get_semua_rute(db: Session = Depends(get_db)):
@@ -193,26 +201,29 @@ def get_semua_rute(db: Session = Depends(get_db)):
         })
     return {"type": "FeatureCollection", "features": features}
 
-# TAHAP 2: UPDATE RUTE
 @app.put("/api/rute/{id_rute}")
 def update_rute(id_rute: int, data: schemas.RuteUpdate, db: Session = Depends(get_db)):
-    rute = db.query(models.Rute).filter(models.Rute.id_rute == id_rute).first()
-    if not rute:
-        raise HTTPException(status_code=404, detail="Rute tidak ditemukan")
-    
-    if data.kode_rute is not None: rute.kode_rute = data.kode_rute
-    if data.jenis_angkutan is not None: rute.jenis_angkutan = data.jenis_angkutan
-    if data.nama_rute is not None: rute.nama_rute = data.nama_rute
-    if data.rute_awal is not None: rute.rute_awal = data.rute_awal
-    if data.rute_akhir is not None: rute.rute_akhir = data.rute_akhir
-    if data.jam_operasional is not None: rute.jam_operasional = data.jam_operasional
-    if data.warna_jalur is not None: rute.warna_jalur = data.warna_jalur
-    
-    if data.geojson_geom is not None:
-        rute.geom = func.ST_SetSRID(func.ST_GeomFromGeoJSON(data.geojson_geom), 4326)
+    try:
+        rute = db.query(models.Rute).filter(models.Rute.id_rute == id_rute).first()
+        if not rute:
+            raise HTTPException(status_code=404, detail="Rute tidak ditemukan")
+        
+        if data.kode_rute is not None: rute.kode_rute = data.kode_rute
+        if data.jenis_angkutan is not None: rute.jenis_angkutan = data.jenis_angkutan
+        if data.nama_rute is not None: rute.nama_rute = data.nama_rute
+        if data.rute_awal is not None: rute.rute_awal = data.rute_awal
+        if data.rute_akhir is not None: rute.rute_akhir = data.rute_akhir
+        if data.jam_operasional is not None: rute.jam_operasional = data.jam_operasional
+        if data.warna_jalur is not None: rute.warna_jalur = data.warna_jalur
+        
+        if data.geojson_geom is not None:
+            rute.geom = func.ST_SetSRID(func.ST_GeomFromGeoJSON(data.geojson_geom), 4326)
 
-    db.commit()
-    return {"message": "Data Rute berhasil diperbarui"}
+        db.commit()
+        return {"message": "Data Rute berhasil diperbarui"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e.__dict__.get('orig', e)))
 
 @app.delete("/api/rute/{id_rute}")
 def delete_rute(id_rute: int, db: Session = Depends(get_db)):
@@ -227,8 +238,6 @@ def delete_rute(id_rute: int, db: Session = Depends(get_db)):
 # ==========================================
 # 4. ENDPOINTS: ANALISIS SPASIAL
 # ==========================================
-
-# A. ST_DWithin (Mencari Halte Terdekat)
 @app.get("/api/analisis/halte-terdekat")
 def cari_halte_terdekat(lat: float, lon: float, radius_meter: float = 1000, db: Session = Depends(get_db)):
     search_point = f"SRID=4326;POINT({lon} {lat})"
@@ -257,7 +266,6 @@ def cari_halte_terdekat(lat: float, lon: float, radius_meter: float = 1000, db: 
             })
     return {"type": "FeatureCollection", "features": features}
 
-# B. ST_Intersects (Mencari Rute yang Memotong Radius)
 @app.get("/api/analisis/rute-intersect")
 def cari_rute_intersect(lat: float, lon: float, radius_meter: float = 1000, db: Session = Depends(get_db)):
     titik_pusat = func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
@@ -281,7 +289,6 @@ def cari_rute_intersect(lat: float, lon: float, radius_meter: float = 1000, db: 
             })
     return {"type": "FeatureCollection", "features": features}
 
-# C. ST_Length (Menghitung Panjang Jalur)
 @app.get("/api/analisis/panjang-rute/{kode_rute}")
 def hitung_panjang_rute(kode_rute: str, db: Session = Depends(get_db)):
     hasil = db.query(
@@ -298,47 +305,8 @@ def hitung_panjang_rute(kode_rute: str, db: Session = Depends(get_db)):
         "panjang_km": round(hasil.panjang_meter / 1000, 2)
     }
 
-# D. ST_Contains & ST_Intersects (Statistik Kecamatan)
-@app.get("/api/analisis/statistik-kecamatan/{id_kecamatan}")
-def statistik_kecamatan(id_kecamatan: int, db: Session = Depends(get_db)):
-    """
-    Menghitung jumlah halte dan rute yang ada di dalam sebuah kecamatan
-    menggunakan query spasial.
-    """
-    # 1. Cari nama kecamatannya dulu
-    kec = db.execute(text("SELECT name FROM kecamatan_jaktim_polygon WHERE id = :id"), {"id": id_kecamatan}).first()
-    if not kec:
-        raise HTTPException(status_code=404, detail="Kecamatan tidak ditemukan")
-    
-    # 2. Hitung Halte (ST_Contains: Titik Halte yang berada DI DALAM Poligon Kecamatan)
-    q_halte = text("""
-        SELECT COUNT(*) FROM halte h
-        JOIN kecamatan_jaktim_polygon k ON ST_Contains(k.geom, h.geom)
-        WHERE k.id = :id
-    """)
-    jml_halte = db.execute(q_halte, {"id": id_kecamatan}).scalar()
-
-    # 3. Hitung Rute (ST_Intersects: Garis Rute yang MEMOTONG/MELINTASI Poligon Kecamatan)
-    q_rute = text("""
-        SELECT COUNT(DISTINCT r.id_rute) FROM rute r
-        JOIN kecamatan_jaktim_polygon k ON ST_Intersects(k.geom, r.geom)
-        WHERE k.id = :id
-    """)
-    jml_rute = db.execute(q_rute, {"id": id_kecamatan}).scalar()
-
-    return {
-        "id_kecamatan": id_kecamatan,
-        "nama_kecamatan": kec.name, # Mengambil kolom 'name' dari database
-        "jumlah_halte": jml_halte,
-        "jumlah_rute": jml_rute
-    }
-
-# TAHAP 1: Endpoint Hitung Jarak (ST_Distance)
 @app.get("/api/analisis/jarak-halte/{id_halte_1}/{id_halte_2}")
 def hitung_jarak_antar_halte(id_halte_1: int, id_halte_2: int, db: Session = Depends(get_db)):
-    """
-    Menghitung jarak lurus (udara) antara dua halte menggunakan ST_Distance
-    """
     Halte1 = aliased(models.Halte)
     Halte2 = aliased(models.Halte)
 
@@ -364,7 +332,6 @@ def hitung_jarak_antar_halte(id_halte_1: int, id_halte_2: int, db: Session = Dep
         "jarak_km": round(hasil.jarak_meter / 1000, 2)
     }
 
-
 # ==========================================
 # 5. ENDPOINTS: WILAYAH ADMINISTRASI (KECAMATAN)
 # ==========================================
@@ -389,20 +356,15 @@ def get_kecamatan(db: Session = Depends(get_db)):
         })
     return {"type": "FeatureCollection", "features": features}
 
-import traceback
-from fastapi.responses import JSONResponse
-
 # ==========================================
 # 6. ENDPOINT: STATISTIK SPASIAL KECAMATAN
 # ==========================================
 @app.get("/api/analisis/statistik-kecamatan/{id_kecamatan:path}")
 def statistik_kecamatan(id_kecamatan: str, db: Session = Depends(get_db)):
-    # 1. Cari data kecamatan
     kec = db.execute(text("SELECT name FROM kecamatan_jaktim_polygon WHERE id = :id"), {"id": id_kecamatan}).first()
     if not kec:
         raise HTTPException(status_code=404, detail="Kecamatan tidak ditemukan")
     
-    # 2. Hitung Halte (Paksa koordinat ke 4326 agar tidak muncul angka 0)
     q_halte = text("""
         SELECT COUNT(*) FROM tabel_halte_final h
         WHERE ST_Intersects(
@@ -413,7 +375,6 @@ def statistik_kecamatan(id_kecamatan: str, db: Session = Depends(get_db)):
     """)
     jml_halte = db.execute(q_halte, {"id": id_kecamatan}).scalar()
 
-    # 3. Hitung Rute
     q_rute = text("""
         SELECT COUNT(DISTINCT r.id_rute) FROM tabel_rute_final r
         WHERE ST_Intersects(

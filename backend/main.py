@@ -39,6 +39,20 @@ class AdminAuth(BaseModel):
 def hash_password(password: str):
     return hashlib.sha256(password.encode()).hexdigest()
 
+
+def parse_geojson_result(result):
+    if result is None:
+        return {
+            "type": "FeatureCollection",
+            "features": []
+        }
+
+    if isinstance(result, str):
+        return json.loads(result)
+
+    return result
+
+
 # ==========================================
 # 1. ENDPOINTS: AUTHENTICATION (AKUN ADMIN)
 # ==========================================
@@ -234,6 +248,132 @@ def delete_rute(id_rute: int, db: Session = Depends(get_db)):
     db.delete(rute)
     db.commit()
     return {"message": "Rute berhasil dihapus"}
+
+
+# ==========================================
+# 3B. ENDPOINTS: FILTER KATEGORI ANGKUTAN
+# ==========================================
+@app.get("/api/kategori-rute")
+def get_kategori_rute(db: Session = Depends(get_db)):
+    query = text("""
+        WITH rute_stat AS (
+            SELECT
+                kategori_layanan,
+                COUNT(*) AS jumlah_data_rute,
+                COUNT(DISTINCT kode_rute_normalized) AS jumlah_kode_rute_unik
+            FROM view_rute_kategori
+            GROUP BY kategori_layanan
+        ),
+        halte_stat AS (
+            SELECT
+                kategori_layanan,
+                COUNT(DISTINCT id_halte) AS jumlah_halte
+            FROM view_halte_kategori
+            GROUP BY kategori_layanan
+        )
+        SELECT
+            COALESCE(r.kategori_layanan, h.kategori_layanan) AS kategori_layanan,
+            COALESCE(r.jumlah_data_rute, 0) AS jumlah_data_rute,
+            COALESCE(r.jumlah_kode_rute_unik, 0) AS jumlah_kode_rute_unik,
+            COALESCE(h.jumlah_halte, 0) AS jumlah_halte
+        FROM rute_stat r
+        FULL OUTER JOIN halte_stat h
+        ON r.kategori_layanan = h.kategori_layanan
+        ORDER BY kategori_layanan;
+    """)
+
+    rows = db.execute(query).mappings().all()
+    return [dict(row) for row in rows]
+
+@app.get("/api/rute/filter")
+def get_rute_by_kategori(
+    kategori: str = None,
+    db: Session = Depends(get_db)
+):
+    where_clause = ""
+    params = {}
+
+    if kategori and kategori.lower() != "semua":
+        where_clause = "WHERE kategori_layanan = :kategori"
+        params["kategori"] = kategori
+
+    query = text(f"""
+        WITH data AS (
+            SELECT
+                id_rute,
+                kode_rute,
+                kode_rute_normalized,
+                jenis_angkutan,
+                nama_rute,
+                rute_awal,
+                rute_akhir,
+                warna_jalur,
+                jam_operasional,
+                kategori_layanan,
+                geom
+            FROM view_rute_kategori
+            {where_clause}
+        )
+        SELECT jsonb_build_object(
+            'type', 'FeatureCollection',
+            'features', COALESCE(jsonb_agg(
+                jsonb_build_object(
+                    'type', 'Feature',
+                    'geometry', ST_AsGeoJSON(geom)::jsonb,
+                    'properties', to_jsonb(data) - 'geom'
+                )
+            ), '[]'::jsonb)
+        ) AS geojson
+        FROM data;
+    """)
+
+    result = db.execute(query, params).scalar()
+    return JSONResponse(content=parse_geojson_result(result))
+
+@app.get("/api/halte/filter")
+def get_halte_by_kategori(
+    kategori: str = None,
+    db: Session = Depends(get_db)
+):
+    where_clause = ""
+    params = {}
+
+    if kategori and kategori.lower() != "semua":
+        where_clause = "WHERE kategori_layanan = :kategori"
+        params["kategori"] = kategori
+
+    query = text(f"""
+        WITH data AS (
+            SELECT DISTINCT ON (id_halte)
+                id_halte,
+                nama_halte,
+                alamat_jalan,
+                tipe_halte,
+                fasilitas_shelter,
+                rute_terhubung,
+                kategori_layanan,
+                status_validasi,
+                geom
+            FROM view_halte_kategori
+            {where_clause}
+            ORDER BY id_halte
+        )
+        SELECT jsonb_build_object(
+            'type', 'FeatureCollection',
+            'features', COALESCE(jsonb_agg(
+                jsonb_build_object(
+                    'type', 'Feature',
+                    'geometry', ST_AsGeoJSON(geom)::jsonb,
+                    'properties', to_jsonb(data) - 'geom'
+                )
+            ), '[]'::jsonb)
+        ) AS geojson
+        FROM data;
+    """)
+
+    result = db.execute(query, params).scalar()
+    return JSONResponse(content=parse_geojson_result(result))
+
 
 # ==========================================
 # 4. ENDPOINTS: ANALISIS SPASIAL

@@ -90,6 +90,8 @@ export default function App() {
   // STATE FILTER TAMPILAN PETA (BARU DITAMBAHKAN KEMBALI)
   const [showHalte, setShowHalte] = useState(true);
   const [showRute, setShowRute] = useState(true);
+  const [kategoriOptions, setKategoriOptions] = useState([]);
+  const [selectedKategori, setSelectedKategori] = useState("Semua");
 
   const [searchPoint, setSearchPoint] = useState(null);
   const [radiusMeter, setRadiusMeter] = useState(1000);
@@ -136,6 +138,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    fetchKategoriOptions();
     fetchRute();
     fetchHalte();
     fetchKecamatan();
@@ -173,14 +176,59 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    fetchRute(selectedKategori);
+    fetchHalte(selectedKategori);
+
+    setSelectedRouteCode(null);
+    setSelectedHalteId(null);
+    setSearchQuery('');
+    setSearchResults([]);
+  }, [selectedKategori]);
+
+  useEffect(() => {
     if (measureStart && measureEnd) {
       axios.get(`${API_URL}/analisis/jarak-halte/${measureStart.id}/${measureEnd.id}`)
         .then(res => setMeasureResult(res.data)).catch(err => alert("Gagal mengukur jarak antar halte."));
     }
   }, [measureStart, measureEnd]);
 
-  const fetchRute = async () => { try { const res = await axios.get(`${API_URL}/rute`); setRuteData(res.data); } catch (e) {} };
-  const fetchHalte = async () => { try { const res = await axios.get(`${API_URL}/halte`); setHalteData(res.data); } catch (e) {} };
+  const fetchKategoriOptions = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/kategori-rute`);
+      setKategoriOptions(res.data);
+    } catch (e) {
+      console.error("Gagal mengambil kategori rute:", e);
+    }
+  };
+
+  const fetchRute = async (kategori = selectedKategori) => {
+    try {
+      const params =
+        kategori === "Semua"
+          ? ""
+          : `?kategori=${encodeURIComponent(kategori)}`;
+
+      const res = await axios.get(`${API_URL}/rute/filter${params}`);
+      setRuteData(res.data);
+    } catch (e) {
+      console.error("Gagal mengambil data rute:", e);
+    }
+  };
+
+  const fetchHalte = async (kategori = selectedKategori) => {
+    try {
+      const params =
+        kategori === "Semua"
+          ? ""
+          : `?kategori=${encodeURIComponent(kategori)}`;
+
+      const res = await axios.get(`${API_URL}/halte/filter${params}`);
+      setHalteData(res.data);
+    } catch (e) {
+      console.error("Gagal mengambil data halte:", e);
+    }
+  };
+
   const fetchKecamatan = async () => { try { const res = await axios.get(`${API_URL}/kecamatan`); setKecamatanData(res.data); } catch (e) {} };
 
   const handleKlikKecamatan = async (id, nama, latlng) => {
@@ -443,6 +491,30 @@ export default function App() {
                   </button>
                 </div>
 
+                {/* --- FILTER KATEGORI ANGKUTAN --- */}
+                <div className="mt-3">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                    Filter Jenis Angkutan
+                  </label>
+
+                  <select
+                    value={selectedKategori}
+                    onChange={(e) => setSelectedKategori(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="Semua">Semua Kategori</option>
+
+                    {kategoriOptions.map((item) => (
+                      <option
+                        key={item.kategori_layanan}
+                        value={item.kategori_layanan}
+                      >
+                        {item.kategori_layanan} ({item.jumlah_kode_rute_unik} rute, {item.jumlah_halte} halte)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {searchResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden z-50">
                     {searchResults.map((item, idx) => (
@@ -696,7 +768,7 @@ export default function App() {
 
         {/* 4. LAYER RUTE ANGKUTAN (BERDASARKAN FILTER) */}
         {showRute && ruteData && <GeoJSON 
-          key={`rute-${selectedRouteCode}-${intersectData ? '1' : '0'}`} 
+          key={`rute-${selectedKategori}-${selectedRouteCode}-${intersectData ? '1' : '0'}`} 
           data={ruteData} 
           style={(f) => {
             const isSelected = f.properties.kode_rute === selectedRouteCode;
@@ -723,6 +795,7 @@ export default function App() {
                 <div id="hasil-panjang-${p.kode_rute}" class="hidden bg-emerald-50 text-emerald-700 p-2.5 rounded-lg text-[11px] font-bold border border-emerald-100 mb-3"></div>
                 <div class="space-y-2.5 text-[12px] text-gray-600 border-t border-gray-100 pt-3.5">
                   <div class="flex justify-between"><span class="font-bold text-gray-400 text-[11px] uppercase tracking-wider">Metode Angkut</span><span class="font-bold text-gray-800">${p.jenis_angkutan || '-'}</span></div>
+                  <div class="flex justify-between"><span class="font-bold text-gray-400 text-[11px] uppercase tracking-wider">Kategori</span><span class="font-bold text-gray-800">${p.kategori_layanan || '-'}</span></div>
                   <div class="flex justify-between"><span class="font-bold text-gray-400 text-[11px] uppercase tracking-wider">Jam Operasi</span><span class="font-bold text-gray-800">${p.jam_operasional || '-'}</span></div>
                 </div>
                 ${adminRuteControls}
@@ -770,6 +843,8 @@ export default function App() {
                     <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Tipe</span><span className="font-bold text-gray-700 capitalize">{p.tipe_halte || '-'}</span></div>
                     <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Fasilitas</span><span className="font-bold text-gray-700">{p.fasilitas_shelter || '-'}</span></div>
                     <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Rute</span><span className="font-bold text-[#1a73e8]">{p.rute_terhubung || '-'}</span></div>
+                    <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Kategori</span><span className="font-bold text-emerald-600">{p.kategori_layanan || '-'}</span></div>
+                    <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Validasi</span><span className="font-bold text-gray-700">{p.status_validasi || '-'}</span></div>
                   </div>
                   {isAdmin && <div dangerouslySetInnerHTML={{ __html: adminControls }} />}
                 </div>

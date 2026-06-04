@@ -410,42 +410,60 @@ const LandingPage = () => {
       </div>
 
       {/* Features Section - Bahasa Betawi */}
-      <div id="fitur" className="py-16 bg-slate-900 relative z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-emerald-400 mb-4">Fitur Andelan Dimari</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
+      <div id="fitur" className="py-20 bg-slate-900 relative z-20 border-y border-slate-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-extrabold text-emerald-400 mb-4 drop-shadow-md">Fitur Andelan Dimari</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto text-lg">
               Alat canggih beneran (Analisis Spasial) buat bantuin Abang ame Mpok ngulik rute di Jaktim tanpa pake ribet.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-slate-800 p-8 rounded-2xl border-t-4 border-emerald-500 hover:bg-slate-750 transition-colors group">
-              <div className="bg-emerald-500/20 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Route className="w-6 h-6 text-emerald-400" />
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Fitur 1 */}
+            <div className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-emerald-900/30 hover:border-emerald-500/50 transition-all duration-300">
+              {/* Potongan Waru Top Eaves */}
+              <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2310b981\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
+              
+              <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center border border-emerald-500/30 mb-6 shadow-lg group-hover:bg-emerald-500/20 group-hover:scale-110 group-hover:border-emerald-400 transition-all relative z-10">
+                <Route className="w-8 h-8 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Pantau Jalur Trayek</h3>
-              <p className="text-slate-400 leading-relaxed text-sm">
+              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-emerald-400 transition-colors relative z-10">Pantau Jalur Trayek</h3>
+              <p className="text-slate-400 leading-relaxed relative z-10">
                 Liat jalur rute Mikrotrans ampe TransJakarta gampang bener. Tinggal pilih, langsung nongol jalurnya di peta.
               </p>
             </div>
 
-            <div className="bg-slate-800 p-8 rounded-2xl border-t-4 border-amber-500 hover:bg-slate-750 transition-colors group">
-              <div className="bg-amber-500/20 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Activity className="w-6 h-6 text-amber-400" />
+            {/* Fitur 2 */}
+            <div className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-amber-900/30 hover:border-amber-500/50 transition-all duration-300">
+              {/* Potongan Waru Top Eaves */}
+              <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%23f59e0b\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
+              
+              <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center border border-amber-500/30 mb-6 shadow-lg group-hover:bg-amber-500/20 group-hover:scale-110 group-hover:border-amber-400 transition-all relative z-10">
+                <Activity className="w-8 h-8 text-amber-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Halte Paling Nempel</h3>
-              <p className="text-slate-400 leading-relaxed text-sm">
+              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-amber-400 transition-colors relative z-10">Halte Paling Nempel</h3>
+              <p className="text-slate-400 leading-relaxed relative z-10">
                 Kagak usah takut nyasar! Tinggal pencet peta buat nyari halte paling deket dari tempat lu berdiri sekarang.
               </p>
             </div>
 
-            <div className="bg-slate-800 p-8 rounded-2xl border-t-4 border-cyan-500 hover:bg-slate-750 transition-colors group">
-              <div className="bg-cyan-500/20 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-6 h-6 text-cyan-400" />
+            {/* Fitur 3 */}
+            <div className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-cyan-900/30 hover:border-cyan-500/50 transition-all duration-300">
+              {/* Potongan Waru Top Eaves */}
+              <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2306b6d4\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
+              
+              <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center border border-cyan-500/30 mb-6 shadow-lg group-hover:bg-cyan-500/20 group-hover:scale-110 group-hover:border-cyan-400 transition-all relative z-10">
+                <BarChart3 className="w-8 h-8 text-cyan-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Statistik Kampung</h3>
-              <p className="text-slate-400 leading-relaxed text-sm">
+              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors relative z-10">Statistik Kampung</h3>
+              <p className="text-slate-400 leading-relaxed relative z-10">
                 Laporan komplit tiap kecamatan. Dapet info jumlah halte, trayek nyang ngeliwatin, ampe panjang jalurnya.
               </p>
             </div>
@@ -454,45 +472,63 @@ const LandingPage = () => {
       </div>
 
       {/* How to Use / Cara Pakenye Section */}
-      <div id="cara-pakai" className="py-24 bg-slate-950 relative z-20 border-y border-slate-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Cara Pakenye Gampang Bener!</h2>
-          <p className="text-slate-400 max-w-2xl mx-auto mb-16">
+      <div id="cara-pakai" className="py-24 bg-slate-950 relative z-20 border-y border-slate-800/50 overflow-hidden">
+        {/* BIG Potongan Waru Watermark Background */}
+        <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%23f59e0b\' /%3E%3C/svg%3E")', backgroundSize: '80px 92px' }}></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <h2 className="text-4xl font-extrabold text-white mb-4 drop-shadow-md">Cara Pakenye Gampang Bener!</h2>
+          <p className="text-slate-400 max-w-2xl mx-auto mb-20 text-lg">
             Kagak perlu pusing, ikutin aje 3 langkah di bawah ini, dijamin langsung paham nyari halte.
           </p>
 
           <div className="grid md:grid-cols-3 gap-12 relative">
             {/* Garis konektor untuk desktop */}
-            <div className="hidden md:block absolute top-1/2 left-[16%] right-[16%] h-1 bg-slate-800 -translate-y-1/2 z-0"></div>
+            <div className="hidden md:block absolute top-[48px] left-[16%] right-[16%] h-1 bg-gradient-to-r from-emerald-500/50 via-amber-400/50 to-cyan-400/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] z-0 rounded-full"></div>
             
             {/* Step 1 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center border-4 border-emerald-500 mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                <Route className="w-10 h-10 text-emerald-400" />
+            <div className="relative z-10 flex flex-col items-center group">
+              <div className="relative mb-8">
+                {/* Cultural glow */}
+                <div className="absolute -inset-4 bg-emerald-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center border-4 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)] group-hover:border-emerald-400 group-hover:scale-110 transition-all duration-500 relative z-10 overflow-hidden">
+                  <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2310b981\' /%3E%3C/svg%3E")', backgroundSize: '40px 46px' }}></div>
+                  <Route className="w-10 h-10 text-emerald-400 relative z-10 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="bg-emerald-500 text-slate-900 font-black text-xl w-10 h-10 rounded-full flex items-center justify-center absolute -top-2 -right-2 shadow-[0_0_15px_rgba(16,185,129,0.5)] border-4 border-slate-950 z-20 transition-transform group-hover:rotate-12">1</div>
               </div>
-              <div className="bg-emerald-500 text-slate-900 font-black text-xl w-8 h-8 rounded-full flex items-center justify-center absolute top-0 right-1/4 translate-x-2 -translate-y-2">1</div>
-              <h3 className="text-xl font-bold text-white mb-2">Pilih Trayek</h3>
-              <p className="text-slate-400">Pilih rute nyang mau lu naikin dari daftar trayek nyang disediain.</p>
+              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-emerald-400 transition-colors">Pilih Trayek</h3>
+              <p className="text-slate-400 px-4 leading-relaxed">Pilih rute nyang mau lu naikin dari daftar trayek nyang disediain.</p>
             </div>
 
             {/* Step 2 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center border-4 border-amber-400 mb-6 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                <MapPin className="w-10 h-10 text-amber-400" />
+            <div className="relative z-10 flex flex-col items-center group">
+              <div className="relative mb-8">
+                {/* Cultural glow */}
+                <div className="absolute -inset-4 bg-amber-400/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center border-4 border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.3)] group-hover:border-amber-300 group-hover:scale-110 transition-all duration-500 relative z-10 overflow-hidden">
+                  <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%23fbbf24\' /%3E%3C/svg%3E")', backgroundSize: '40px 46px' }}></div>
+                  <MapPin className="w-10 h-10 text-amber-400 relative z-10 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="bg-amber-400 text-slate-900 font-black text-xl w-10 h-10 rounded-full flex items-center justify-center absolute -top-2 -right-2 shadow-[0_0_15px_rgba(245,158,11,0.5)] border-4 border-slate-950 z-20 transition-transform group-hover:rotate-12">2</div>
               </div>
-              <div className="bg-amber-400 text-slate-900 font-black text-xl w-8 h-8 rounded-full flex items-center justify-center absolute top-0 right-1/4 translate-x-2 -translate-y-2">2</div>
-              <h3 className="text-xl font-bold text-white mb-2">Cari Halte</h3>
-              <p className="text-slate-400">Peta bakal nunjukin titik halte nyang paling nempel sama lokasi lu.</p>
+              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-amber-400 transition-colors">Cari Halte</h3>
+              <p className="text-slate-400 px-4 leading-relaxed">Peta bakal nunjukin titik halte nyang paling nempel sama lokasi lu.</p>
             </div>
 
             {/* Step 3 */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center border-4 border-cyan-400 mb-6 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                <Bus className="w-10 h-10 text-cyan-400" />
+            <div className="relative z-10 flex flex-col items-center group">
+              <div className="relative mb-8">
+                {/* Cultural glow */}
+                <div className="absolute -inset-4 bg-cyan-400/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center border-4 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.3)] group-hover:border-cyan-300 group-hover:scale-110 transition-all duration-500 relative z-10 overflow-hidden">
+                  <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2322d3ee\' /%3E%3C/svg%3E")', backgroundSize: '40px 46px' }}></div>
+                  <Bus className="w-10 h-10 text-cyan-400 relative z-10 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="bg-cyan-400 text-slate-900 font-black text-xl w-10 h-10 rounded-full flex items-center justify-center absolute -top-2 -right-2 shadow-[0_0_15px_rgba(6,182,212,0.5)] border-4 border-slate-950 z-20 transition-transform group-hover:rotate-12">3</div>
               </div>
-              <div className="bg-cyan-400 text-slate-900 font-black text-xl w-8 h-8 rounded-full flex items-center justify-center absolute top-0 right-1/4 translate-x-2 -translate-y-2">3</div>
-              <h3 className="text-xl font-bold text-white mb-2">Ngacir Dah!</h3>
-              <p className="text-slate-400">Udah tau rute ame haltenya? Langsung aje gas jalan ke tkp!</p>
+              <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors">Ngacir Dah!</h3>
+              <p className="text-slate-400 px-4 leading-relaxed">Udah tau rute ame haltenya? Langsung aje gas jalan ke tkp!</p>
             </div>
           </div>
         </div>

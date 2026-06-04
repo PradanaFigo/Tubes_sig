@@ -474,7 +474,7 @@ export default function App() {
 
       {/* NAVBAR GLOBAL (Sama dengan Landing Page) */}
       <div 
-        className="w-full h-6 sm:h-8 z-[60] drop-shadow-lg shrink-0" 
+        className="fixed top-0 left-0 w-full h-6 sm:h-8 z-[60] drop-shadow-lg shrink-0" 
         style={{ 
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='46' viewBox='0 0 80 46'%3E%3Cpath d='M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z' fill='%23f59e0b' /%3E%3Cpath d='M41 0 L79 0 L79 12 A8 8 0 0 0 79 28 L60 46 L41 28 A8 8 0 0 0 41 12 Z' fill='%2310b981' /%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat-x',
@@ -482,7 +482,7 @@ export default function App() {
           backgroundPosition: 'top left'
         }}
       ></div>
-      <nav className="w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 h-16 shrink-0 flex items-center justify-between px-6 shadow-md">
+      <nav className="w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 h-16 shrink-0 flex items-center justify-between px-6 shadow-md mt-4 sm:mt-5">
         <div className="flex items-center space-x-3">
           {/* Exact Bajaj Logo (Thick Line Art) */}
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-8 h-8 text-amber-400 drop-shadow-md">
@@ -524,7 +524,7 @@ export default function App() {
       <div className={`absolute top-4 left-4 bottom-4 z-[1002] w-[400px] bg-slate-900/95 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5),_inset_0_1px_0_rgba(255,255,255,0.1)] rounded-2xl border border-slate-700/50 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden ${isPanelOpen ? 'translate-x-0 opacity-100' : '-translate-x-[120%] opacity-0'}`}>
         
         {/* Unsur Budaya Gigi Balang */}
-        <div className="h-4 w-full bg-slate-950 border-b border-slate-800" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='20' viewBox='0 0 60 20'%3E%3Cpolygon points='0,0 15,20 30,0' fill='%23fbbf24' /%3E%3Cpolygon points='30,0 45,20 60,0' fill='%2310b981' /%3E%3C/svg%3E")`, backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
+        <div className="h-6 sm:h-8 w-full bg-slate-950 border-b border-slate-800 shrink-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='46' viewBox='0 0 80 46'%3E%3Cpath d='M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z' fill='%23f59e0b' /%3E%3Cpath d='M41 0 L79 0 L79 12 A8 8 0 0 0 79 28 L60 46 L41 28 A8 8 0 0 0 41 12 Z' fill='%2310b981' /%3E%3C/svg%3E")`, backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
 
         <div className={`px-6 py-5 border-b border-slate-800/50 flex justify-between items-center bg-slate-950/30`}>
           <div className="flex items-center gap-4">

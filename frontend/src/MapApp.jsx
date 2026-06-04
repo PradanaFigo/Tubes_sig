@@ -92,6 +92,7 @@ export default function App() {
   const [showRute, setShowRute] = useState(true);
   const [kategoriOptions, setKategoriOptions] = useState([]);
   const [selectedKategori, setSelectedKategori] = useState("Semua");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [searchPoint, setSearchPoint] = useState(null);
   const [radiusMeter, setRadiusMeter] = useState(1000);
@@ -266,16 +267,16 @@ export default function App() {
 
       popup.setContent(`
         <div class="font-sans min-w-[200px] p-1.5 text-center">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Statistik Spasial Wilayah</span>
-          <h4 class="font-extrabold text-gray-800 text-[16px] leading-tight mb-3">Kec. ${data.nama_kecamatan}</h4>
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Statistik Spasial Wilayah</span>
+          <h4 class="font-extrabold text-white text-[16px] leading-tight mb-3">Kec. ${data.nama_kecamatan}</h4>
           <div class="grid grid-cols-2 gap-2 mb-1">
-            <div class="bg-blue-50 border border-blue-100 py-2.5 px-2 rounded-xl shadow-sm">
-              <span class="block text-2xl font-black text-blue-600 leading-none mb-1">${data.jumlah_halte}</span>
-              <span class="text-[9px] font-extrabold text-blue-500 uppercase tracking-widest">Titik Halte</span>
+            <div class="bg-slate-950/50 border border-slate-800 py-2.5 px-2 rounded-xl shadow-inner">
+              <span class="block text-2xl font-black text-emerald-400 leading-none mb-1">${data.jumlah_halte}</span>
+              <span class="text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">Titik Halte</span>
             </div>
-            <div class="bg-amber-50 border border-amber-100 py-2.5 px-2 rounded-xl shadow-sm">
-              <span class="block text-2xl font-black text-amber-500 leading-none mb-1">${data.jumlah_rute}</span>
-              <span class="text-[9px] font-extrabold text-amber-500 uppercase tracking-widest">Jalur Rute</span>
+            <div class="bg-slate-950/50 border border-slate-800 py-2.5 px-2 rounded-xl shadow-inner">
+              <span class="block text-2xl font-black text-amber-400 leading-none mb-1">${data.jumlah_rute}</span>
+              <span class="text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">Jalur Rute</span>
             </div>
           </div>
         </div>
@@ -526,29 +527,32 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* --- FILTER KATEGORI ANGKUTAN --- */}
-                <div className="mt-4">
+                {/* --- FILTER KATEGORI ANGKUTAN (Custom Dropdown) --- */}
+                <div className="mt-4 relative">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
                     Filter Jenis Angkutan
                   </label>
-
-                  <select
-                    value={selectedKategori}
-                    onChange={(e) => setSelectedKategori(e.target.value)}
-                    className="w-full bg-slate-950/80 border border-slate-700/50 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-300 outline-none focus:border-emerald-500 transition-colors"
-                  >
-                    <option value="Semua">Semua Kategori</option>
-
-                    {kategoriOptions.map((item) => (
-                      <option
-                        key={item.kategori_layanan}
-                        value={item.kategori_layanan}
-                        className="bg-slate-900 text-slate-200"
-                      >
-                        {item.kategori_layanan} ({item.jumlah_kode_rute_unik} rute, {item.jumlah_halte} halte)
-                      </option>
-                    ))}
-                  </select>
+                  
+                  <div className="relative">
+                    <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="w-full bg-slate-950/80 border border-slate-700/50 hover:border-emerald-500/50 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-300 flex justify-between items-center transition-colors">
+                      <span className="truncate">{selectedKategori === 'Semua' ? 'Semua Kategori' : selectedKategori}</span>
+                      <svg className={`w-4 h-4 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    
+                    {isDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[1005] max-h-48 overflow-y-auto no-scrollbar">
+                        <button onClick={() => { setSelectedKategori("Semua"); setIsDropdownOpen(false); }} className={`w-full text-left px-4 py-3 text-sm transition-colors ${selectedKategori === "Semua" ? "bg-emerald-500/20 text-emerald-400 font-bold" : "text-slate-300 hover:bg-slate-800"}`}>
+                          Semua Kategori
+                        </button>
+                        {kategoriOptions.map((item) => (
+                          <button key={item.kategori_layanan} onClick={() => { setSelectedKategori(item.kategori_layanan); setIsDropdownOpen(false); }} className={`w-full text-left px-4 py-3 text-sm border-t border-slate-800/50 transition-colors flex justify-between items-center ${selectedKategori === item.kategori_layanan ? "bg-emerald-500/20 text-emerald-400 font-bold" : "text-slate-300 hover:bg-slate-800"}`}>
+                            <span className="truncate mr-2">{item.kategori_layanan}</span>
+                            <span className={`text-[10px] shrink-0 font-normal ${selectedKategori === item.kategori_layanan ? "text-emerald-500/80" : "text-slate-500"}`}>{item.jumlah_kode_rute_unik} rute, {item.jumlah_halte} halte</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {searchResults.length > 0 && (
@@ -716,8 +720,8 @@ export default function App() {
       {/* MAP AREA CONTAINER */}
       <div className="flex-1 relative bg-slate-900">
         
-        {/* TOMBOL TOGGLE SIDEBAR (Nempel Kiri Tengah) */}
-        <button onClick={() => setIsPanelOpen(!isPanelOpen)} className="absolute top-1/2 left-0 -translate-y-1/2 z-[1000] bg-slate-900/90 backdrop-blur-md p-1.5 py-4 rounded-r-xl border border-slate-700/50 border-l-0 text-slate-400 hover:text-emerald-400 shadow-[10px_0_20px_rgba(0,0,0,0.5)] hover:bg-slate-800 transition-all focus:outline-none" title="Toggle Panel">
+        {/* TOMBOL TOGGLE SIDEBAR (Bergerak Mengikuti Sidebar) */}
+        <button onClick={() => setIsPanelOpen(!isPanelOpen)} className={`absolute top-1/2 -translate-y-1/2 z-[1000] bg-slate-900/90 backdrop-blur-md p-1.5 py-4 rounded-r-xl border border-slate-700/50 text-slate-400 hover:text-emerald-400 shadow-[10px_0_20px_rgba(0,0,0,0.5)] hover:bg-slate-800 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] focus:outline-none ${isPanelOpen ? 'left-[416px] border-l-0' : 'left-0 border-l-0'}`} title="Toggle Panel">
           <svg className={`w-5 h-5 transition-transform duration-300 ${isPanelOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
 
@@ -835,22 +839,22 @@ export default function App() {
           }} 
           onEachFeature={(f, l) => {
             const p = f.properties;
-            const btnEditRute = isAdmin ? `<button onclick="window.editRute(${p.id_rute}, '${p.kode_rute}', '${p.jenis_angkutan}', '${p.nama_rute.replace(/'/g, "\\'")}', '${p.rute_awal}', '${p.rute_akhir}', '${p.jam_operasional}', '${p.warna_jalur}', ${JSON.stringify(f.geometry.coordinates)})" class="flex-1 bg-blue-50 text-blue-600 border border-blue-100 font-bold py-2.5 rounded-lg text-xs hover:bg-blue-100">Edit Rute</button>` : '';
-            const btnHapusRute = isAdmin ? `<button onclick="window.hapusRute(${p.id_rute})" class="flex-1 bg-red-50 text-red-600 border border-red-100 font-bold py-2.5 rounded-lg text-xs hover:bg-red-100">Hapus Rute</button>` : '';
-            const adminRuteControls = isAdmin ? `<div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">${btnEditRute}${btnHapusRute}</div>` : '';
+            const btnEditRute = isAdmin ? `<button onclick="window.editRute(${p.id_rute}, '${p.kode_rute}', '${p.jenis_angkutan}', '${p.nama_rute.replace(/'/g, "\\'")}', '${p.rute_awal}', '${p.rute_akhir}', '${p.jam_operasional}', '${p.warna_jalur}', ${JSON.stringify(f.geometry.coordinates)})" class="flex-1 bg-slate-800 text-blue-400 border border-slate-700 font-bold py-2.5 rounded-lg text-xs hover:bg-slate-700">Edit Rute</button>` : '';
+            const btnHapusRute = isAdmin ? `<button onclick="window.hapusRute(${p.id_rute})" class="flex-1 bg-slate-800 text-red-400 border border-slate-700 font-bold py-2.5 rounded-lg text-xs hover:bg-slate-700">Hapus Rute</button>` : '';
+            const adminRuteControls = isAdmin ? `<div class="flex gap-2 mt-3 pt-3 border-t border-slate-700">${btnEditRute}${btnHapusRute}</div>` : '';
 
             l.bindPopup(`
               <div class="font-sans w-[240px] p-1.5">
                 <div class="mb-4">
-                  <h4 class="font-extrabold text-gray-800 text-[15px] leading-tight mb-1.5">${p.nama_rute}</h4>
-                  <span class="inline-block bg-blue-50 text-blue-600 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-widest border border-blue-100">${p.kode_rute}</span>
+                  <h4 class="font-extrabold text-white text-[15px] leading-tight mb-1.5">${p.nama_rute}</h4>
+                  <span class="inline-block bg-slate-800 text-slate-300 text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-widest border border-slate-700 shadow-inner">${p.kode_rute}</span>
                 </div>
-                <div id="loading-panjang-${p.kode_rute}" class="text-[11px] text-gray-500 mt-2 mb-3 italic flex items-center gap-1.5">Menghitung jarak spasial...</div>
-                <div id="hasil-panjang-${p.kode_rute}" class="hidden bg-emerald-50 text-emerald-700 p-2.5 rounded-lg text-[11px] font-bold border border-emerald-100 mb-3"></div>
-                <div class="space-y-2.5 text-[12px] text-gray-600 border-t border-gray-100 pt-3.5">
-                  <div class="flex justify-between"><span class="font-bold text-gray-400 text-[11px] uppercase tracking-wider">Metode Angkut</span><span class="font-bold text-gray-800">${p.jenis_angkutan || '-'}</span></div>
-                  <div class="flex justify-between"><span class="font-bold text-gray-400 text-[11px] uppercase tracking-wider">Kategori</span><span class="font-bold text-gray-800">${p.kategori_layanan || '-'}</span></div>
-                  <div class="flex justify-between"><span class="font-bold text-gray-400 text-[11px] uppercase tracking-wider">Jam Operasi</span><span class="font-bold text-gray-800">${p.jam_operasional || '-'}</span></div>
+                <div id="loading-panjang-${p.kode_rute}" class="text-[11px] text-slate-500 mt-2 mb-3 italic flex items-center gap-1.5">Menghitung jarak spasial...</div>
+                <div id="hasil-panjang-${p.kode_rute}" class="hidden bg-slate-950/50 text-emerald-400 p-2.5 rounded-lg text-[11px] font-bold border border-slate-800 shadow-inner mb-3"></div>
+                <div class="space-y-2.5 text-[12px] text-slate-300 border-t border-slate-700 pt-3.5">
+                  <div class="flex justify-between"><span class="font-bold text-slate-500 text-[11px] uppercase tracking-wider">Metode Angkut</span><span class="font-bold text-white">${p.jenis_angkutan || '-'}</span></div>
+                  <div class="flex justify-between"><span class="font-bold text-slate-500 text-[11px] uppercase tracking-wider">Kategori</span><span class="font-bold text-emerald-400">${p.kategori_layanan || '-'}</span></div>
+                  <div class="flex justify-between"><span class="font-bold text-slate-500 text-[11px] uppercase tracking-wider">Jam Operasi</span><span class="font-bold text-white">${p.jam_operasional || '-'}</span></div>
                 </div>
                 ${adminRuteControls}
               </div>
@@ -861,7 +865,7 @@ export default function App() {
                 const res = await axios.get(`${API_URL}/analisis/panjang-rute/${p.kode_rute}`);
                 document.getElementById(`loading-panjang-${p.kode_rute}`).style.display = 'none';
                 const divHasil = document.getElementById(`hasil-panjang-${p.kode_rute}`);
-                divHasil.style.display = 'block'; divHasil.innerHTML = `Estimasi Jarak (ST_Length): <br/><span class="text-sm text-emerald-900">${res.data.panjang_km} Kilometer</span>`;
+                divHasil.style.display = 'block'; divHasil.innerHTML = `Estimasi Jarak (ST_Length): <br/><span class="text-sm text-emerald-400">${res.data.panjang_km} Kilometer</span>`;
               } catch(e) {}
             });
           }} 
@@ -889,16 +893,16 @@ export default function App() {
               <Popup>
                 <div className="font-sans min-w-[240px] p-1.5">
                   <div className="mb-3">
-                    <h4 className="font-extrabold text-gray-800 text-[15px] leading-tight mb-1">{p.nama_halte}</h4>
-                    <span className="inline-block bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">ID: {p.id_halte}</span>
+                    <h4 className="font-extrabold text-white text-[15px] leading-tight mb-1">{p.nama_halte}</h4>
+                    <span className="inline-block bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest shadow-inner">ID: {p.id_halte}</span>
                   </div>
-                  <p className="text-[11px] text-gray-500 leading-snug mb-3 pb-3 border-b border-gray-100">{p.alamat_jalan || 'Data lokasi fisik tidak tersimpan'}</p>
-                  <div className="space-y-2.5 text-[12px] bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                    <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Tipe</span><span className="font-bold text-gray-700 capitalize">{p.tipe_halte || '-'}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Fasilitas</span><span className="font-bold text-gray-700">{p.fasilitas_shelter || '-'}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Rute</span><span className="font-bold text-[#1a73e8]">{p.rute_terhubung || '-'}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Kategori</span><span className="font-bold text-emerald-600">{p.kategori_layanan || '-'}</span></div>
-                    <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Validasi</span><span className="font-bold text-gray-700">{p.status_validasi || '-'}</span></div>
+                  <p className="text-[11px] text-slate-400 leading-snug mb-3 pb-3 border-b border-slate-700">{p.alamat_jalan || 'Data lokasi fisik tidak tersimpan'}</p>
+                  <div className="space-y-2.5 text-[12px] bg-slate-950/50 p-3 rounded-xl border border-slate-800 shadow-inner">
+                    <div className="flex justify-between items-center"><span className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Tipe</span><span className="font-bold text-slate-200 capitalize">{p.tipe_halte || '-'}</span></div>
+                    <div className="flex justify-between items-center"><span className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Fasilitas</span><span className="font-bold text-slate-200">{p.fasilitas_shelter || '-'}</span></div>
+                    <div className="flex justify-between items-center"><span className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Rute</span><span className="font-bold text-amber-400">{p.rute_terhubung || '-'}</span></div>
+                    <div className="flex justify-between items-center"><span className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Kategori</span><span className="font-bold text-emerald-400">{p.kategori_layanan || '-'}</span></div>
+                    <div className="flex justify-between items-center"><span className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Validasi</span><span className="font-bold text-slate-300">{p.status_validasi || '-'}</span></div>
                   </div>
                   {isAdmin && <div dangerouslySetInnerHTML={{ __html: adminControls }} />}
                 </div>
@@ -915,14 +919,14 @@ export default function App() {
              <Marker key={`radius-marker-${p.id_halte}`} position={latlng} icon={iconRadius}>
                <Popup>
                   <div className="font-sans min-w-[240px] p-1.5">
-                    <div className="text-red-500 font-extrabold text-[10px] mb-2.5 uppercase tracking-widest">Radius Evaluasi ST_DWithin</div>
+                    <div className="text-emerald-500 font-extrabold text-[10px] mb-2.5 uppercase tracking-widest flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Area Radius ST_DWithin</div>
                     <div className="mb-3">
-                      <h4 className="font-extrabold text-gray-800 text-[15px] leading-tight mb-1">{p.nama_halte}</h4>
-                      <span className="inline-block bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest">ID: {p.id_halte}</span>
+                      <h4 className="font-extrabold text-white text-[15px] leading-tight mb-1">{p.nama_halte}</h4>
+                      <span className="inline-block bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest shadow-inner">ID: {p.id_halte}</span>
                     </div>
-                    <div className="space-y-2.5 text-[12px] bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                      <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Tipe</span><span className="font-bold text-gray-700 capitalize">{p.tipe_halte || '-'}</span></div>
-                      <div className="flex justify-between items-center"><span className="font-bold text-gray-400 text-[10px] uppercase tracking-wider">Rute</span><span className="font-bold text-[#1a73e8]">{p.rute_terhubung || '-'}</span></div>
+                    <div className="space-y-2.5 text-[12px] bg-slate-950/50 p-3 rounded-xl border border-slate-800 shadow-inner">
+                      <div className="flex justify-between items-center"><span className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Tipe</span><span className="font-bold text-slate-200 capitalize">{p.tipe_halte || '-'}</span></div>
+                      <div className="flex justify-between items-center"><span className="font-bold text-slate-500 text-[10px] uppercase tracking-wider">Rute</span><span className="font-bold text-amber-400">{p.rute_terhubung || '-'}</span></div>
                     </div>
                   </div>
                </Popup>

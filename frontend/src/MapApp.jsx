@@ -460,7 +460,27 @@ export default function App() {
       <div className="w-full h-4 z-[60] drop-shadow-lg shrink-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='20' viewBox='0 0 60 20'%3E%3Cpolygon points='0,0 15,20 30,0' fill='%23fbbf24' /%3E%3Cpolygon points='30,0 45,20 60,0' fill='%2310b981' /%3E%3C/svg%3E")`, backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%' }}></div>
       <nav className="w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 h-16 shrink-0 flex items-center justify-between px-6 shadow-md">
         <div className="flex items-center space-x-3">
-          <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+          {/* Exact Bajaj Logo (Thick Line Art) */}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-8 h-8 text-amber-400 drop-shadow-md">
+            <g stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none">
+              {/* Body Frame */}
+              <path d="M 15 65 L 15 30 Q 15 15 30 15 L 60 15 Q 80 15 85 45 L 85 65 L 15 65 Z" />
+              {/* Diagonal Passenger Cutout */}
+              <path d="M 15 45 L 35 65" />
+              {/* Center Pillar */}
+              <path d="M 45 15 L 45 65" />
+              {/* Driver Seat */}
+              <path d="M 45 45 Q 60 45 60 65" />
+              {/* Handlebar */}
+              <path d="M 65 15 Q 90 15 90 25" />
+              {/* Front Mudguard */}
+              <path d="M 85 45 Q 100 45 100 65 L 85 65" />
+              {/* Rear Wheel */}
+              <circle cx="30" cy="75" r="10" />
+              {/* Front Wheel */}
+              <circle cx="85" cy="75" r="10" />
+            </g>
+          </svg>
           <span className="font-bold text-xl tracking-tight text-white">TransJakarta <span className="text-amber-400">Timur</span></span>
         </div>
         <div className="flex space-x-6 items-center">

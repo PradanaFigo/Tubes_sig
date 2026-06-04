@@ -49,12 +49,33 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2">
-              <Map className="w-8 h-8 text-emerald-400" />
+              {/* Exact Bajaj Logo (Thick Line Art) */}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-10 h-10 text-amber-400 drop-shadow-md">
+                <g stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                  {/* Body Frame */}
+                  <path d="M 15 65 L 15 30 Q 15 15 30 15 L 60 15 Q 80 15 85 45 L 85 65 L 15 65 Z" />
+                  {/* Diagonal Passenger Cutout */}
+                  <path d="M 15 45 L 35 65" />
+                  {/* Center Pillar */}
+                  <path d="M 45 15 L 45 65" />
+                  {/* Driver Seat */}
+                  <path d="M 45 45 Q 60 45 60 65" />
+                  {/* Handlebar */}
+                  <path d="M 65 15 Q 90 15 90 25" />
+                  {/* Front Mudguard */}
+                  <path d="M 85 45 Q 100 45 100 65 L 85 65" />
+                  {/* Rear Wheel */}
+                  <circle cx="30" cy="75" r="10" />
+                  {/* Front Wheel */}
+                  <circle cx="85" cy="75" r="10" />
+                </g>
+              </svg>
               <span className="font-bold text-xl tracking-tight text-white">TransJakarta <span className="text-amber-400">Timur</span></span>
             </div>
-            <div className="flex space-x-4 items-center">
-              <a href="#fitur" className="text-slate-300 hover:text-amber-400 px-3 py-2 text-sm font-medium transition-colors hidden sm:block">Andelan Kite</a>
-              <a href="#tentang" className="text-slate-300 hover:text-amber-400 px-3 py-2 text-sm font-medium transition-colors hidden sm:block">Siapa Nyang Bikin</a>
+            <div className="flex space-x-6 items-center">
+              <a href="#fitur" className="text-slate-300 hover:text-amber-400 text-sm font-medium transition-colors hidden md:block">Andelan Kite</a>
+              <a href="#cara-pakai" className="text-slate-300 hover:text-amber-400 text-sm font-medium transition-colors hidden md:block">Cara Gunainnya</a>
+              <a href="#tentang" className="text-slate-300 hover:text-amber-400 text-sm font-medium transition-colors hidden md:block">Siapa Nyang Bikin</a>
               <button 
                 onClick={() => navigate('/admin')}
                 className="text-slate-400 hover:text-emerald-400 px-3 py-2 text-sm font-medium transition-colors"
@@ -74,12 +95,102 @@ const LandingPage = () => {
           {/* Decorative Glow */}
           <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-emerald-500/15 blur-[120px] rounded-full mix-blend-screen" />
           
-          {/* Jakarta Skyline & Monas */}
-          <div className="absolute bottom-0 w-full h-56 opacity-40 z-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to top, rgba(16, 185, 129, 0.3), transparent)' }}>
-            <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-full h-full preserve-3d" preserveAspectRatio="none">
-              <path fill="#0f172a" d="M0,320 L0,200 L50,200 L50,150 L80,150 L80,200 L120,200 L120,100 L160,100 L160,200 L200,200 L200,180 L230,180 L230,200 L300,200 L300,50 L330,50 L330,200 L400,200 L400,120 L440,120 L440,200 L480,200 L480,250 L520,250 L520,200 L550,200 L550,160 L580,160 L580,200 L650,200 L650,280 L700,280 L700,200 L750,200 L750,80 L790,80 L790,200 L850,200 L850,140 L880,140 L880,200 L950,200 L950,190 L1000,190 L1000,200 L1100,200 L1100,100 L1150,100 L1150,200 L1250,200 L1250,130 L1280,130 L1280,200 L1350,200 L1350,170 L1380,170 L1380,200 L1440,200 L1440,320 Z"></path>
-              <path fill="#0f172a" d="M680,200 L680,80 L695,80 L695,50 L700,40 L705,50 L705,80 L720,80 L720,200 Z"></path>
-              <path fill="#fbbf24" d="M695,40 L700,25 L705,40 Z" className="animate-pulse"></path>
+          {/* Decorative Monas Background Watermark */}
+          <div className="absolute left-[-5%] sm:left-[2%] top-[15%] sm:top-[25%] opacity-100 pointer-events-none transform -rotate-3 scale-125 sm:scale-[1.8] z-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-[300px] h-[300px] text-emerald-400 opacity-100 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">
+              {/* Base */}
+              <path fill="currentColor" d="M 20 90 L 25 80 L 75 80 L 80 90 Z" />
+              <path fill="currentColor" d="M 30 80 L 30 75 L 70 75 L 70 80 Z" />
+              {/* Cup */}
+              <path fill="currentColor" d="M 35 75 L 45 65 L 55 65 L 65 75 Z" />
+              {/* Tower */}
+              <path fill="currentColor" d="M 45 65 L 48 20 L 52 20 L 55 65 Z" />
+              {/* Flame base */}
+              <path fill="currentColor" d="M 46 20 L 54 20 L 52 15 L 48 15 Z" />
+              {/* Flame */}
+              <path fill="#fbbf24" d="M 50 5 Q 55 10 52 15 L 48 15 Q 45 10 50 5 Z" className="animate-pulse" />
+            </svg>
+          </div>
+
+          {/* Decorative Exact Ondel-Ondel Background Watermark */}
+          <div className="absolute right-[-5%] sm:right-[2%] top-[15%] sm:top-[20%] opacity-100 pointer-events-none transform rotate-6 scale-125 sm:scale-[1.8] z-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-[300px] h-[300px] text-amber-500 opacity-100 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">
+                <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                  <path strokeWidth="5" d="M 25 95 L 25 70 Q 25 60 50 60 Q 75 60 75 70 L 75 95 Q 50 100 25 95 Z" />
+                  <path strokeWidth="5" d="M 35 62 L 35 85 Q 40 85 45 85 L 45 70" />
+                  <path strokeWidth="2" d="M 38 65 L 38 80 M 42 68 L 42 82" />
+                  <path strokeWidth="5" d="M 65 62 L 65 85 Q 60 85 55 85 L 55 70" />
+                  <path strokeWidth="2" d="M 58 68 L 58 82 M 62 65 L 62 80" />
+                  <path strokeWidth="1" d="M 35 80 L 55 75" />
+                  <path strokeWidth="5" d="M 30 40 L 30 50 Q 30 65 50 65 Q 70 65 70 50 L 70 40 Z" />
+                  <path strokeWidth="5" d="M 30 45 Q 15 40 20 55 Q 25 60 30 55" />
+                  <path strokeWidth="5" d="M 70 45 Q 85 40 80 55 Q 75 60 70 55" />
+                  <circle cx="40" cy="50" r="4" fill="currentColor" stroke="none" />
+                  <circle cx="60" cy="50" r="4" fill="currentColor" stroke="none" />
+                  <path fill="currentColor" stroke="none" d="M 35 60 Q 50 50 65 60 Q 60 55 50 55 Q 40 55 35 60 Z" />
+                  <path strokeWidth="5" d="M 28 30 L 72 30 L 75 40 L 25 40 Z" />
+                  <path strokeWidth="5" d="M 30 30 L 30 25 Q 35 20 40 25 Q 50 20 60 25 Q 65 20 70 25 L 70 30 Z" />
+                  <path strokeWidth="2" d="M 28 35 L 72 35" />
+                  <path strokeWidth="5" d="M 50 25 L 50 5" />
+                  <path strokeWidth="4" d="M 45 15 L 55 15 M 45 8 L 55 8" />
+                  <path strokeWidth="5" d="M 40 25 L 30 10" />
+                  <path strokeWidth="4" d="M 32 20 L 40 15 M 27 12 L 35 8" />
+                  <path strokeWidth="5" d="M 30 25 L 15 15" />
+                  <path strokeWidth="4" d="M 25 25 L 20 18 M 18 20 L 12 12" />
+                  <path strokeWidth="5" d="M 60 25 L 70 10" />
+                  <path strokeWidth="4" d="M 68 20 L 60 15 M 73 12 L 65 8" />
+                  <path strokeWidth="5" d="M 70 25 L 85 15" />
+                  <path strokeWidth="4" d="M 75 25 L 80 18 M 82 20 L 88 12" />
+                </g>
+            </svg>
+          </div>
+          
+          {/* Jakarta Skyline (Detailed Premium version with original Green Gradient) */}
+          <div className="absolute bottom-0 w-full h-[350px] opacity-[0.6] z-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to top, rgba(16, 185, 129, 0.4), transparent)' }}>
+            <svg viewBox="0 0 1440 350" className="absolute bottom-0 w-full h-full preserve-3d" preserveAspectRatio="none">
+              
+              {/* BACK LAYER: Distant Buildings (Slate) */}
+              <path fill="#1e293b" d="M0,350 L0,220 H30 V350 M50,350 V180 H90 V350 M120,350 V150 H160 V350 M200,350 V190 H240 V350 M300,350 V100 H340 V350 M400,350 V160 H450 V350 M800,350 V170 H840 V350 M900,350 V120 H940 V350 M1000,350 V190 H1050 V350 M1100,350 V140 H1150 V350 M1200,350 V180 H1250 V350 M1300,350 V110 H1340 V350" />
+              
+              {/* MID LAYER: Wisma 46 (Fountain Pen Shape) & Light (Dark Slate) */}
+              <path fill="#0f172a" d="M1000,350 V150 Q1015,100 1030,150 V350 Z"></path>
+              <path fill="#10b981" d="M1012,130 L1015,110 L1018,130 Z" className="animate-pulse"></path>
+              
+              {/* MID LAYER: Monas Base (Dark Slate) */}
+              <path fill="#0f172a" d="M680,350 L680,180 L690,180 L695,90 L705,90 L710,180 L720,180 L720,350 Z" />
+              {/* MID LAYER: Monas Flame */}
+              <path fill="#fbbf24" d="M695,90 Q700,60 705,90 Z" className="animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]"></path>
+
+              {/* MID LAYER: GBK Stadium */}
+              <path fill="#0f172a" d="M100,350 L90,290 Q150,260 210,290 L200,350 Z"></path>
+
+              {/* MID LAYER: Varied Skyline Buildings */}
+              <path fill="#0f172a" d="M300,350 V160 L315,140 L330,160 V350 Z"></path>
+              <path fill="#0f172a" d="M350,350 V200 H360 V170 H380 V200 H390 V350 Z"></path>
+              <path fill="#0f172a" d="M450,350 V120 H490 V350 Z"></path>
+              <path fill="#0f172a" d="M550,350 V230 H560 V200 H570 V180 H580 V200 H590 V230 H600 V350 Z"></path>
+              <path fill="#0f172a" d="M780,350 V180 L800,160 L820,180 V350 Z"></path>
+              <path fill="#0f172a" d="M850,350 V250 H855 V350 M845,240 L852,250 L860,240"></path> {/* Bundaran HI style */}
+              <path fill="#0f172a" d="M1100,350 V160 H1120 V140 H1140 V350 Z"></path>
+              <path fill="#0f172a" d="M1200,350 V200 H1240 V350 Z"></path>
+              <path fill="#0f172a" d="M1300,350 V250 H1315 V200 H1335 V250 H1350 V350 Z"></path>
+
+              {/* FRONT LAYER: Removed to avoid black gap at bottom */}
+              
+              {/* GLOWING WINDOWS */}
+              <rect x="110" y="220" width="8" height="12" fill="#fbbf24" opacity="0.4" className="animate-pulse" />
+              <rect x="125" y="240" width="8" height="12" fill="#10b981" opacity="0.3" />
+              <rect x="220" y="180" width="8" height="12" fill="#fbbf24" opacity="0.5" />
+              <rect x="235" y="200" width="8" height="12" fill="#10b981" opacity="0.4" />
+              <rect x="465" y="150" width="10" height="15" fill="#fbbf24" opacity="0.6" className="animate-pulse" />
+              <rect x="465" y="180" width="10" height="15" fill="#fbbf24" opacity="0.4" />
+              <rect x="465" y="210" width="10" height="15" fill="#fbbf24" opacity="0.5" />
+              <rect x="800" y="200" width="8" height="12" fill="#10b981" opacity="0.5" />
+              <rect x="860" y="240" width="8" height="12" fill="#fbbf24" opacity="0.3" />
+              <rect x="1115" y="190" width="10" height="15" fill="#fbbf24" opacity="0.6" className="animate-pulse" />
+              <rect x="1215" y="230" width="10" height="15" fill="#10b981" opacity="0.4" />
+              <rect x="1395" y="170" width="10" height="15" fill="#fbbf24" opacity="0.5" />
+              
             </svg>
           </div>
         </div>
@@ -196,7 +307,7 @@ const LandingPage = () => {
       </div>
 
       {/* How to Use / Cara Pakenye Section */}
-      <div className="py-24 bg-slate-900 relative z-20 border-t border-slate-800/50">
+      <div id="cara-pakai" className="py-24 bg-slate-950 relative z-20 border-y border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Cara Pakenye Gampang Bener!</h2>
           <p className="text-slate-400 max-w-2xl mx-auto mb-16">

@@ -1,16 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Map, MapPin, Bus, Route, Activity, BarChart3, Users, ExternalLink } from 'lucide-react';
+import { Map, MapPin, Bus, Route, Activity, BarChart3, Users, ExternalLink, Search } from 'lucide-react';
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import axios from 'axios';
+
+// --- KONFIGURASI MARKER "TEARDROP PIN" ALA GOOGLE MAPS ---
+const createGoogleStyleIcon = (bgColorClass, extraClass = '') => {
+  return new L.divIcon({
+    className: 'custom-div-icon',
+    html: `
+      <div class="relative flex flex-col items-center ${extraClass} drop-shadow-md transition-transform hover:z-50">
+        <div class="w-8 h-8 ${bgColorClass} border-[2px] border-white flex items-center justify-center text-white shadow-sm" style="border-radius: 50% 50% 50% 0; transform: rotate(-45deg);">
+          <div style="transform: rotate(45deg);" class="flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-[15px] h-[15px]">
+              <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-10-8V6h11v4H6.5z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="w-3 h-1 bg-black/30 rounded-[50%] blur-[1px] mt-0.5"></div>
+      </div>
+    `,
+    iconSize: [32, 40],
+    iconAnchor: [16, 38],
+    popupAnchor: [0, -38]
+  });
+};
+
+const iconDefault = createGoogleStyleIcon('bg-[#1a73e8]', 'hover:scale-110');
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const [pantunText, setPantunText] = useState('');
+  const [ruteData, setRuteData] = useState(null);
+  const [halteData, setHalteData] = useState(null);
   const fullPantun = "Jalan-jalan ke Pasar Rebo, pulangnya naik JakLingko. Kalo bingung rute sama halte, mari buka WebGIS kito!";
+
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
 
   const playPantunSound = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel(); // Stop suara sebelumnya jika ada
-      const utterance = new SpeechSynthesisUtterance("Jalan-jalan ke Pasar Rebo, pulangnya naik JakLingko. Kalo bingung rute sama halte, mari buka WebGIS kito!");
+      const utterance = new SpeechSynthesisUtterance("Jalan-jalan ke Pasar Rebo, pulangnya naik JakLingko. Kalo bingung rute sama halte, mari buka WebGIS kite!");
       utterance.lang = 'id-ID'; // Logat Indonesia
       utterance.rate = 0.9; // Agak santai
       window.speechSynthesis.speak(utterance);
@@ -18,6 +53,21 @@ const LandingPage = () => {
   };
 
   useEffect(() => {
+    // Coba mainkan suara otomatis pas web dibuka
+    // Catatan: Beberapa browser (Chrome/Edge) butuh user berinteraksi dulu baru suara bisa keluar (Autoplay Policy)
+    setTimeout(() => {
+      playPantunSound();
+    }, 800);
+
+    // Fetch data buat peta sekilas
+    // Fetch data buat peta sekilas
+    axios.get('http://127.0.0.1:8000/api/rute/filter')
+      .then(res => setRuteData(res.data))
+      .catch(err => console.error("Gagal load rute:", err));
+    axios.get('http://127.0.0.1:8000/api/halte/filter')
+      .then(res => setHalteData(res.data))
+      .catch(err => console.error("Gagal load halte:", err));
+
     let i = 0;
     const typingInterval = setInterval(() => {
       if (i < fullPantun.length) {
@@ -30,14 +80,54 @@ const LandingPage = () => {
     return () => clearInterval(typingInterval);
   }, []);
 
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    const endpoint = isRegisterMode ? '/auth/register' : '/auth/login';
+    try {
+      await axios.post(`http://127.0.0.1:8000/api${endpoint}`, { username: adminUsername, password: adminPassword });
+      if (isRegisterMode) {
+        alert("Daftar berhasil! Silakan login.");
+        setIsRegisterMode(false);
+      } else {
+        localStorage.setItem('forceAdminOpen', 'true');
+        navigate('/map');
+      }
+    } catch (error) {
+      alert("Autentikasi gagal! Cek lagi ID atau Sandi.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-emerald-500 selection:text-white overflow-x-hidden relative">
       
+      {/* MODAL AUTENTIKASI (Landing Page) */}
+      {showAdminModal && (
+        <div className="fixed inset-0 z-[9999] bg-slate-950/80 flex items-center justify-center backdrop-blur-md">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-[360px] overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-amber-400 to-cyan-500"></div>
+            <div className="flex bg-slate-950/50 border-b border-slate-800 pt-1">
+              <button onClick={() => setIsRegisterMode(false)} className={`flex-1 py-4 text-sm font-bold transition-colors ${!isRegisterMode ? 'text-amber-400 border-b-2 border-amber-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}>Masuk Admin</button>
+              <button onClick={() => setIsRegisterMode(true)} className={`flex-1 py-4 text-sm font-bold transition-colors ${isRegisterMode ? 'text-amber-400 border-b-2 border-amber-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}>Daftar Admin</button>
+            </div>
+            <form onSubmit={handleAdminLogin} className="p-6 relative">
+              <div className="space-y-4 relative z-10">
+                <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">ID Pengguna</label><input type="text" className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none" value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} required /></div>
+                <div><label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Kata Sandi</label><input type="password" className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required /></div>
+              </div>
+              <div className="flex gap-3 mt-8 relative z-10">
+                <button type="button" onClick={() => setShowAdminModal(false)} className="flex-1 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl text-sm transition-colors backdrop-blur-sm border border-slate-700">Batal</button>
+                <button type="submit" className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl text-sm shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all border border-amber-500/50">{isRegisterMode ? 'Daftar' : 'Masuk'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Gigi Balang Ornament (Top) - Fixed & Rata Atas SVG */}
       <div 
-        className="fixed top-0 left-0 w-full h-4 sm:h-5 z-[60] drop-shadow-lg"
+        className="fixed top-0 left-0 w-full h-6 sm:h-8 z-[60] drop-shadow-lg"
         style={{ 
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='20' viewBox='0 0 60 20'%3E%3Cpolygon points='0,0 15,20 30,0' fill='%23fbbf24' /%3E%3Cpolygon points='30,0 45,20 60,0' fill='%2310b981' /%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='46' viewBox='0 0 80 46'%3E%3Cpath d='M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z' fill='%23f59e0b' /%3E%3Cpath d='M41 0 L79 0 L79 12 A8 8 0 0 0 79 28 L60 46 L41 28 A8 8 0 0 0 41 12 Z' fill='%2310b981' /%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat-x',
           backgroundSize: 'auto 100%',
           backgroundPosition: 'top left'
@@ -77,7 +167,7 @@ const LandingPage = () => {
               <a href="#cara-pakai" className="text-slate-300 hover:text-amber-400 text-sm font-medium transition-colors hidden md:block">Cara Gunainnya</a>
               <a href="#tentang" className="text-slate-300 hover:text-amber-400 text-sm font-medium transition-colors hidden md:block">Siapa Nyang Bikin</a>
               <button 
-                onClick={() => navigate('/admin')}
+                onClick={() => setShowAdminModal(true)}
                 className="text-slate-400 hover:text-emerald-400 px-3 py-2 text-sm font-medium transition-colors"
               >
                 Admin
@@ -236,6 +326,8 @@ const LandingPage = () => {
               Intip Dulu Fiturnya
             </a>
           </div>
+
+
         </div>
       </div>
 
@@ -259,46 +351,101 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* Features Section - Bahasa Betawi */}
-      <div id="fitur" className="py-24 bg-slate-900 relative z-20">
+      {/* Real Map Preview Section */}
+      <div className="py-10 bg-slate-900 border-y border-slate-800 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">Fitur Andelan Dimari</h2>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-white mb-4">Peta Sekilas</h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
-              Alat canggih beneran (Analisis Spasial) buat bantuin Abang ame Mpok ngulik rute di Jaktim.
+              Langsung intip peta asli rute ame halte TransJakarta Timur di mari. Bisa digeser-geser juga!
+            </p>
+          </div>
+          {/* Laptop Mockup Wrapper for Map */}
+          <div className="relative w-full max-w-5xl mx-auto rounded-t-3xl sm:rounded-3xl bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-[0_-10px_50px_rgba(16,185,129,0.1)] overflow-hidden group z-30 transform transition-transform hover:scale-[1.01] duration-500">
+            {/* Window Top Bar */}
+            <div className="h-10 bg-slate-800/80 flex items-center px-4 gap-2 border-b border-slate-700/50">
+              <div className="w-3.5 h-3.5 rounded-full bg-red-500/80"></div>
+              <div className="w-3.5 h-3.5 rounded-full bg-amber-500/80"></div>
+              <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/80"></div>
+            </div>
+
+            <div className="w-full h-[300px] sm:h-[400px] bg-[#020617] relative z-10">
+              <MapContainer 
+                center={[-6.225014, 106.900447]} 
+                zoom={12} 
+                zoomControl={true} 
+                scrollWheelZoom={false} 
+                attributionControl={false} 
+                className="w-full h-full z-10"
+              >
+                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" detectRetina={true} maxZoom={21} maxNativeZoom={16} />
+                
+                {/* Render routes */}
+                {ruteData && ruteData.features && (
+                  <GeoJSON 
+                    data={ruteData} 
+                    style={{
+                      color: "#1a73e8",
+                      weight: 4,
+                      opacity: 0.8
+                    }}
+                  />
+                )}
+                
+                {/* Render stops as Teardrop Pins */}
+                {halteData && halteData.features && halteData.features.map((feature, i) => {
+                  const coords = feature.geometry.coordinates;
+                  return (
+                    <Marker 
+                      key={i}
+                      position={[coords[1], coords[0]]}
+                      icon={iconDefault}
+                    />
+                  );
+                })}
+              </MapContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section - Bahasa Betawi */}
+      <div id="fitur" className="py-16 bg-slate-900 relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-emerald-400 mb-4">Fitur Andelan Dimari</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Alat canggih beneran (Analisis Spasial) buat bantuin Abang ame Mpok ngulik rute di Jaktim tanpa pake ribet.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700/50 hover:border-emerald-500/50 transition-colors group relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
-              <div className="bg-emerald-500/20 w-14 h-14 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-emerald-500/30">
-                <Route className="w-7 h-7 text-emerald-400" />
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-slate-800 p-8 rounded-2xl border-t-4 border-emerald-500 hover:bg-slate-750 transition-colors group">
+              <div className="bg-emerald-500/20 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Route className="w-6 h-6 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Pantau Jalur Trayek</h3>
-              <p className="text-slate-400 leading-relaxed relative z-10">
-                Liat jalur rute Mikrotrans ampe TransJakarta gampang bener. Tinggal pilih, langsung nongol di peta.
+              <h3 className="text-xl font-bold text-white mb-2">Pantau Jalur Trayek</h3>
+              <p className="text-slate-400 leading-relaxed text-sm">
+                Liat jalur rute Mikrotrans ampe TransJakarta gampang bener. Tinggal pilih, langsung nongol jalurnya di peta.
               </p>
             </div>
 
-            <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700/50 hover:border-amber-500/50 transition-colors group relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all"></div>
-              <div className="bg-amber-500/20 w-14 h-14 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-amber-500/30">
-                <Activity className="w-7 h-7 text-amber-400" />
+            <div className="bg-slate-800 p-8 rounded-2xl border-t-4 border-amber-500 hover:bg-slate-750 transition-colors group">
+              <div className="bg-amber-500/20 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Activity className="w-6 h-6 text-amber-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Halte Paling Nempel</h3>
-              <p className="text-slate-400 leading-relaxed relative z-10">
-                Kagak usah takut nyasar! Tinggal pencet peta buat nyari halte paling deket dari tempat lu berdiri.
+              <h3 className="text-xl font-bold text-white mb-2">Halte Paling Nempel</h3>
+              <p className="text-slate-400 leading-relaxed text-sm">
+                Kagak usah takut nyasar! Tinggal pencet peta buat nyari halte paling deket dari tempat lu berdiri sekarang.
               </p>
             </div>
 
-            <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700/50 hover:border-cyan-500/50 transition-colors group relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all"></div>
-              <div className="bg-cyan-500/20 w-14 h-14 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-cyan-500/30">
-                <BarChart3 className="w-7 h-7 text-cyan-400" />
+            <div className="bg-slate-800 p-8 rounded-2xl border-t-4 border-cyan-500 hover:bg-slate-750 transition-colors group">
+              <div className="bg-cyan-500/20 w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <BarChart3 className="w-6 h-6 text-cyan-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Statistik Kampung</h3>
-              <p className="text-slate-400 leading-relaxed relative z-10">
+              <h3 className="text-xl font-bold text-white mb-2">Statistik Kampung</h3>
+              <p className="text-slate-400 leading-relaxed text-sm">
                 Laporan komplit tiap kecamatan. Dapet info jumlah halte, trayek nyang ngeliwatin, ampe panjang jalurnya.
               </p>
             </div>
@@ -353,40 +500,56 @@ const LandingPage = () => {
 
       {/* About/Team Section - Bahasa Betawi */}
       <div id="tentang" className="py-24 bg-slate-950 relative z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <h2 className="text-3xl font-bold text-white mb-12">Nyang Bikin Nih Web</h2>
-          <div className="flex justify-center">
-            <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 max-w-3xl w-full shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-amber-400 to-cyan-500"></div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <h2 className="text-4xl font-extrabold text-amber-400 mb-12 drop-shadow-md">Nyang Bikin Nih Web</h2>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Card 1 */}
+            <div className="bg-slate-900 p-8 pt-14 rounded-3xl border border-emerald-500/20 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-emerald-900/30 hover:border-emerald-500/40 transition-all duration-300">
+              {/* Potongan Waru Top Eaves */}
+              <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2310b981\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
               
-              <div className="grid md:grid-cols-3 gap-6 pt-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 bg-gradient-to-tr from-emerald-500 to-green-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <h4 className="font-bold text-white">Pradana Figo Ariansya</h4>
-                  <p className="text-sm text-slate-400 mt-1">123140063</p>
+              <div className="flex flex-col items-center relative z-10 pt-4">
+                <div className="w-20 h-20 bg-slate-950 border-2 border-emerald-500/50 rounded-full flex items-center justify-center mb-4 group-hover:bg-emerald-500/20 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                  <Users className="w-8 h-8 text-emerald-400" />
                 </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <h4 className="font-bold text-white">Awi Septian Prasetyo</h4>
-                  <p className="text-sm text-slate-400 mt-1">123140201</p>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 bg-gradient-to-tr from-cyan-500 to-blue-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <h4 className="font-bold text-white">Muhammad Bimastiar</h4>
-                  <p className="text-sm text-slate-400 mt-1">123140211</p>
-                </div>
-              </div>
-              <div className="mt-10 pt-8 border-t border-slate-800 text-slate-400 text-sm font-medium">
-                Tugas Besar Sistem Informasi Geografis (T1) <br/> 
-                <span className="text-amber-500 block mt-1">Institut Teknologi Sumatera</span>
+                <h4 className="text-xl font-bold text-white mb-1 group-hover:text-emerald-400 transition-colors">Pradana Figo Ariansya</h4>
+                <div className="mt-2 px-4 py-1.5 bg-slate-950/80 rounded-lg border border-emerald-500/30 text-emerald-400 font-mono text-sm tracking-wider">123140063</div>
               </div>
             </div>
+
+            {/* Card 2 */}
+            <div className="bg-slate-900 p-8 pt-14 rounded-3xl border border-amber-500/20 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-amber-900/30 hover:border-amber-500/40 transition-all duration-300">
+              {/* Potongan Waru Top Eaves */}
+              <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%23f59e0b\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
+              
+              <div className="flex flex-col items-center relative z-10 pt-4">
+                <div className="w-20 h-20 bg-slate-950 border-2 border-amber-500/50 rounded-full flex items-center justify-center mb-4 group-hover:bg-amber-500/20 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                  <Users className="w-8 h-8 text-amber-400" />
+                </div>
+                <h4 className="text-xl font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">Awi Septian Prasetyo</h4>
+                <div className="mt-2 px-4 py-1.5 bg-slate-950/80 rounded-lg border border-amber-500/30 text-amber-400 font-mono text-sm tracking-wider">123140201</div>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-slate-900 p-8 pt-14 rounded-3xl border border-cyan-500/20 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-cyan-900/30 hover:border-cyan-500/40 transition-all duration-300">
+              {/* Potongan Waru Top Eaves */}
+              <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2306b6d4\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
+              
+              <div className="flex flex-col items-center relative z-10 pt-4">
+                <div className="w-20 h-20 bg-slate-950 border-2 border-cyan-500/50 rounded-full flex items-center justify-center mb-4 group-hover:bg-cyan-500/20 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                  <Users className="w-8 h-8 text-cyan-400" />
+                </div>
+                <h4 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">Muhammad Bimastiar</h4>
+                <div className="mt-2 px-4 py-1.5 bg-slate-950/80 rounded-lg border border-cyan-500/30 text-cyan-400 font-mono text-sm tracking-wider">123140211</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-16 inline-flex items-center justify-center gap-3 px-6 py-3 bg-slate-900 rounded-full border border-slate-800 shadow-lg relative z-10 hover:border-amber-500/50 transition-colors">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span className="text-slate-400 font-medium">Tugas Besar Sistem Informasi Geografis (T1) <span className="mx-2">|</span> <span className="text-amber-500 font-bold">Institut Teknologi Sumatera</span></span>
           </div>
         </div>
       </div>

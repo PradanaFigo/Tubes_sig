@@ -40,6 +40,14 @@ const MAP_LAYERS = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
 };
 
+const MAX_NATIVE_ZOOM = {
+  modern: 16,
+  satelit: 18,
+  terrain: 16,
+  osm: 18,
+  dark: 16
+};
+
 // --- KOMPONEN MINIMAP ---
 function MinimapInner({ mainMap }) {
   const minimap = useMap();
@@ -64,12 +72,11 @@ function MinimapInner({ mainMap }) {
   return <Rectangle bounds={bounds} weight={1.5} color="#1a73e8" fillOpacity={0} dashArray="4, 4" />;
 }
 
-function Minimap({ mainMap, mapUrl }) {
-  if (!mainMap) return null;
+function Minimap({ mainMap, mapUrl, maxNativeZoom }) {
   return (
     <div style={{ position: 'absolute', bottom: '24px', right: '70px', width: '160px', height: '160px', zIndex: 1000 }} className="bg-slate-900 border-2 border-slate-700/80 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto transition-all duration-300 hover:scale-105 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] group">
       <MapContainer center={mainMap.getCenter()} zoom={10} zoomControl={false} attributionControl={false} dragging={false} doubleClickZoom={false} scrollWheelZoom={false} touchZoom={false} style={{ backgroundColor: '#0f172a' }} className="w-full h-full cursor-crosshair">
-        <TileLayer url={mapUrl} />
+        <TileLayer url={mapUrl} detectRetina={true} maxZoom={21} maxNativeZoom={maxNativeZoom} />
         <MinimapInner mainMap={mainMap} />
       </MapContainer>
       <div className="absolute bottom-0 left-0 w-full bg-slate-950 text-center py-1.5 text-[10px] font-black text-slate-400 tracking-widest z-[1001] pointer-events-none group-hover:bg-emerald-600 group-hover:text-white transition-colors uppercase border-t border-slate-800">MINIMAP</div>
@@ -133,6 +140,15 @@ export default function App() {
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
   const [time, setTime] = useState(new Date());
   const [userLocation, setUserLocation] = useState(null);
+
+  useEffect(() => {
+    if (localStorage.getItem('forceAdminOpen') === 'true') {
+      setIsAdmin(true);
+      setActiveTab('tambah'); // Force open the management tab
+      setIsPanelOpen(true); // Automatically open the sidebar
+      localStorage.removeItem('forceAdminOpen');
+    }
+  }, []);
 
   const handleLocateUser = () => {
     if (!navigator.geolocation) {
@@ -457,7 +473,15 @@ export default function App() {
       )}
 
       {/* NAVBAR GLOBAL (Sama dengan Landing Page) */}
-      <div className="w-full h-4 z-[60] drop-shadow-lg shrink-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='20' viewBox='0 0 60 20'%3E%3Cpolygon points='0,0 15,20 30,0' fill='%23fbbf24' /%3E%3Cpolygon points='30,0 45,20 60,0' fill='%2310b981' /%3E%3C/svg%3E")`, backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%' }}></div>
+      <div 
+        className="w-full h-6 sm:h-8 z-[60] drop-shadow-lg shrink-0" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='46' viewBox='0 0 80 46'%3E%3Cpath d='M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z' fill='%23f59e0b' /%3E%3Cpath d='M41 0 L79 0 L79 12 A8 8 0 0 0 79 28 L60 46 L41 28 A8 8 0 0 0 41 12 Z' fill='%2310b981' /%3E%3C/svg%3E")`,
+          backgroundRepeat: 'repeat-x',
+          backgroundSize: 'auto 100%',
+          backgroundPosition: 'top left'
+        }}
+      ></div>
       <nav className="w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 h-16 shrink-0 flex items-center justify-between px-6 shadow-md">
         <div className="flex items-center space-x-3">
           {/* Exact Bajaj Logo (Thick Line Art) */}
@@ -794,11 +818,11 @@ export default function App() {
       </div>
 
       {/* MINIMAP RADAR */}
-      {mapInstance && <Minimap mainMap={mapInstance} mapUrl={MAP_LAYERS[mapType]} />}
+      {mapInstance && <Minimap mainMap={mapInstance} mapUrl={MAP_LAYERS[mapType]} maxNativeZoom={MAX_NATIVE_ZOOM[mapType]} />}
 
       {/* MAP ENGINE PUSAT */}
       <MapContainer center={[-6.225, 106.90]} zoom={13} zoomControl={false} attributionControl={false} className="w-full h-full z-0" ref={setMapInstance}>
-        <TileLayer url={MAP_LAYERS[mapType]} detectRetina={true} />
+        <TileLayer key={mapType} url={MAP_LAYERS[mapType]} detectRetina={true} maxZoom={21} maxNativeZoom={MAX_NATIVE_ZOOM[mapType]} />
         <ZoomControl position="bottomright" />
         <MapEvents />
 

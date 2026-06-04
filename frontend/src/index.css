@@ -3,11 +3,9 @@
 @tailwind utilities;
 
 html, body, #root {
-  height: 100vh;
-  width: 100vw;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 /* Memaksa peta Leaflet mengambil sisa ruang */
@@ -15,4 +13,63 @@ html, body, #root {
   height: 100%;
   width: 100%;
   z-index: 0;
+}
+
+/* Dark Theme for Leaflet Controls */
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background-color: rgba(15, 23, 42, 0.9) !important; /* bg-slate-900 */
+  color: #94a3b8 !important; /* text-slate-400 */
+  border-bottom-color: rgba(51, 65, 85, 0.5) !important; /* border-slate-700 */
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+.leaflet-bar a:hover {
+  color: #34d399 !important; /* text-emerald-400 */
+  background-color: rgba(30, 41, 59, 0.9) !important; /* bg-slate-800 */
+}
+.leaflet-control-zoom {
+  border: 1px solid rgba(51, 65, 85, 0.5) !important; /* border-slate-700 */
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+  margin-right: 20px !important;
+  margin-bottom: 24px !important;
+}
+
+/* Sembunyikan scrollbar bawaan browser tapi tetap bisa di-scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Dark Theme for Leaflet Popups */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background-color: rgba(15, 23, 42, 0.95) !important; /* bg-slate-900 */
+  color: #f8fafc !important; /* text-slate-50 */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+  backdrop-filter: blur(12px);
+}
+.leaflet-popup-content-wrapper {
+  border: 1px solid rgba(51, 65, 85, 0.5) !important; /* border-slate-700 */
+  border-radius: 1rem !important; /* rounded-2xl */
+}
+.leaflet-popup-tip {
+  border-top: 1px solid rgba(51, 65, 85, 0.5) !important;
+  border-left: 1px solid rgba(51, 65, 85, 0.5) !important;
+}
+.leaflet-popup-content {
+  margin: 16px 20px !important;
+  line-height: 1.5 !important;
+}
+.leaflet-popup-close-button {
+  color: #94a3b8 !important; /* text-slate-400 */
+  padding: 4px 6px !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #34d399 !important; /* text-emerald-400 */
+  background: transparent !important;
 }

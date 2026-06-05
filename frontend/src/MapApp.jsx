@@ -72,6 +72,180 @@ function MinimapInner({ mainMap }) {
   return <Rectangle bounds={bounds} weight={1.5} color="#1a73e8" fillOpacity={0} dashArray="4, 4" />;
 }
 
+// --- KOMPONEN ANIMASI BUS ---
+const AnimatedBus = ({ ruteData, animatingRouteCode, mapInstance }) => {
+  useEffect(() => {
+    if (!mapInstance || !ruteData || !animatingRouteCode) return;
+    
+    const routeFeature = ruteData.features.find(f => f.properties.kode_rute === animatingRouteCode);
+    if (!routeFeature) return;
+
+    let coords = [];
+    if (routeFeature.geometry.type === 'LineString') {
+      coords = routeFeature.geometry.coordinates;
+    } else if (routeFeature.geometry.type === 'MultiLineString') {
+      coords = routeFeature.geometry.coordinates[0];
+    }
+    
+    if (!coords || coords.length < 2) return;
+
+    const latLngs = coords.map(c => [c[1], c[0]]);
+
+    const busIcon = L.divIcon({
+      className: 'animated-bus-icon-blue',
+      html: `<div id="bus-icon-container" style="transition: transform 0.1s linear; transform-origin: center;" class="drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)] z-[1000]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="26" viewBox="0 0 150 65">
+          <defs>
+            <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#ea580c"/> <!-- Darker Orange back -->
+              <stop offset="50%" stop-color="#f59e0b"/> <!-- Amber middle -->
+              <stop offset="100%" stop-color="#eab308"/> <!-- Yellow front -->
+            </linearGradient>
+
+            <linearGradient id="winGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7dd3fc"/>
+              <stop offset="50%" stop-color="#0ea5e9"/>
+              <stop offset="100%" stop-color="#0284c7"/>
+            </linearGradient>
+
+            <linearGradient id="roofGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="80%" stop-color="#f1f5f9"/>
+              <stop offset="100%" stop-color="#cbd5e1"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Roof & Window Pillars (Volumetric) -->
+          <path d="M 10 10 c 0 -5 5 -5 10 -5 h 110 c 5 0 10 0 10 5 v 27 h -130 z" fill="url(#roofGrad)" />
+          <!-- Roof Highlight -->
+          <path d="M 10 10 c 0 -3 5 -3 10 -3 h 110 c 5 0 10 0 10 3" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.8" />
+          
+          <!-- Windows -->
+          <rect x="15" y="10" width="18" height="22" rx="3" fill="url(#winGrad)" />
+          <rect x="37" y="10" width="18" height="22" rx="3" fill="url(#winGrad)" />
+          <rect x="59" y="10" width="18" height="22" rx="3" fill="url(#winGrad)" />
+          <rect x="81" y="10" width="18" height="22" rx="3" fill="url(#winGrad)" />
+          <rect x="103" y="10" width="18" height="22" rx="3" fill="url(#winGrad)" />
+          
+          <!-- Glass Glossy Reflection (Across all side windows) -->
+          <path d="M 15 10 h 106 l -5 10 h -106 z" fill="#ffffff" opacity="0.25" />
+          
+          <!-- Front Windshield -->
+          <path d="M 125 10 h 12 c 2 0 3 1 3 3 v 3 h -15 z" fill="#0f172a" /> <!-- Visor -->
+          <path d="M 125 16 h 15 v 16 h -15 z" fill="url(#winGrad)" /> <!-- Glass -->
+          <!-- Glass Reflection (Windshield) -->
+          <path d="M 125 16 h 15 l -2 6 h -13 z" fill="#ffffff" opacity="0.25" />
+
+          <!-- Body (Orange/Yellow) -->
+          <path d="M 10 35 h 130 v 15 c 0 5 -5 5 -10 5 h -110 c -5 0 -10 0 -10 -5 z" fill="url(#bodyGrad)" />
+          <!-- Body Top Bevel -->
+          <path d="M 10 36 h 130" fill="none" stroke="#fef08a" stroke-width="2" opacity="0.6" />
+          <!-- Body Bottom Volume Shadow -->
+          <path d="M 10 50 h 130 v 5 c 0 5 -5 5 -10 5 h -110 c -5 0 -10 0 -10 -5 z" fill="#000000" opacity="0.2" />
+          
+          <!-- Taillight -->
+          <path d="M 10 40 h 3 v 8 h -3 z" fill="#dc2626" />
+          <path d="M 10 40 h 2 v 4 h -2 z" fill="#fca5a5" />
+          
+          <!-- Headlight -->
+          <ellipse cx="136" cy="45" rx="5" ry="7" fill="#fef08a" opacity="0.9" filter="blur(1px)" />
+          <ellipse cx="138" cy="45" rx="2" ry="4" fill="#ffffff" />
+          
+          <!-- Wheels & Wells -->
+          <!-- Rear Wheel -->
+          <path d="M 24 55 a 11 11 0 0 1 22 0" fill="#000000" opacity="0.4" /> <!-- Wheel Well -->
+          <circle cx="35" cy="55" r="9" fill="#1e293b" />
+          <circle cx="35" cy="55" r="7" fill="#0f172a" />
+          <circle cx="35" cy="55" r="4" fill="#cbd5e1" />
+          <circle cx="35" cy="55" r="2" fill="#ffffff" />
+          
+          <!-- Front Wheel -->
+          <path d="M 104 55 a 11 11 0 0 1 22 0" fill="#000000" opacity="0.4" /> <!-- Wheel Well -->
+          <circle cx="115" cy="55" r="9" fill="#1e293b" />
+          <circle cx="115" cy="55" r="7" fill="#0f172a" />
+          <circle cx="115" cy="55" r="4" fill="#cbd5e1" />
+          <circle cx="115" cy="55" r="2" fill="#ffffff" />
+        </svg>
+      </div>`,
+      iconSize: [60, 26],
+      iconAnchor: [30, 13] // Center bus over the line
+    });
+
+    const marker = L.marker(latLngs[0], { icon: busIcon, zIndexOffset: 1000 }).addTo(mapInstance);
+
+    let currentCoordIndex = 0;
+    let progress = 0;
+    let animationFrameId;
+
+    // Zoom and pan to the start of the route first
+    mapInstance.flyTo(latLngs[0], 16, { animate: true, duration: 1 });
+
+    const animate = () => {
+      if (currentCoordIndex >= latLngs.length - 1) {
+        cancelAnimationFrame(animationFrameId);
+        window.setAnimatingRouteCode && window.setAnimatingRouteCode(null);
+        return;
+      }
+
+      const start = latLngs[currentCoordIndex];
+      const end = latLngs[currentCoordIndex + 1];
+      
+      if (!start || !end) return;
+
+      const dLat = end[0] - start[0];
+      const dLng = end[1] - start[1];
+      const dist = Math.sqrt(dLat*dLat + dLng*dLng);
+      
+      const segmentSpeed = dist > 0 ? 0.00008 / dist : 1; 
+      
+      progress += segmentSpeed;
+      
+      if (progress >= 1) {
+        progress = 0;
+        currentCoordIndex++;
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
+
+      const lat = start[0] + dLat * progress;
+      const lng = start[1] + dLng * progress;
+
+      marker.setLatLng([lat, lng]);
+      
+      // Update arah hadap dan kemiringan bus
+      const el = document.getElementById('bus-icon-container');
+      if (el && dist > 0) {
+        let angle = Math.atan2(-dLat, dLng) * 180 / Math.PI;
+        if (dLng < 0) {
+          el.style.transform = `rotate(${angle}deg) scaleY(-1)`;
+        } else {
+          el.style.transform = `rotate(${angle}deg) scaleY(1)`;
+        }
+      }
+      
+      // Update camera directly
+      mapInstance.setView([lat, lng], mapInstance.getZoom(), { animate: false });
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    // Start animation after flyTo
+    const timeoutId = setTimeout(() => {
+      animate();
+    }, 1000);
+
+    return () => {
+      clearTimeout(timeoutId);
+      cancelAnimationFrame(animationFrameId);
+      if (mapInstance && mapInstance.hasLayer(marker)) {
+        mapInstance.removeLayer(marker);
+      }
+    };
+  }, [ruteData, animatingRouteCode, mapInstance]);
+
+  return null;
+};
+
 function Minimap({ mainMap, mapUrl, maxNativeZoom }) {
   return (
     <div style={{ position: 'absolute', bottom: '24px', right: '70px', width: '160px', height: '160px', zIndex: 1000 }} className="bg-slate-900 border-2 border-slate-700/80 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto transition-all duration-300 hover:scale-105 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] group">
@@ -94,7 +268,6 @@ export default function App() {
   const [radiusData, setRadiusData] = useState(null);
   const [intersectData, setIntersectData] = useState(null); 
   
-  // STATE FILTER TAMPILAN PETA (BARU DITAMBAHKAN KEMBALI)
   const [showHalte, setShowHalte] = useState(true);
   const [showRute, setShowRute] = useState(true);
   const [kategoriOptions, setKategoriOptions] = useState([]);
@@ -108,6 +281,13 @@ export default function App() {
   const [isSelectingPoint, setIsSelectingPoint] = useState(false);
   
   const [selectedRouteCode, setSelectedRouteCode] = useState(null);
+  const [animatingRouteCode, setAnimatingRouteCode] = useState(null);
+  
+  // Expose function for popup button
+  useEffect(() => {
+    window.startBusAnimation = (kode) => setAnimatingRouteCode(kode);
+    return () => delete window.startBusAnimation;
+  }, []);
   const [selectedHalteId, setSelectedHalteId] = useState(null);
   const [activeKecamatanId, setActiveKecamatanId] = useState(null);
 
@@ -144,8 +324,8 @@ export default function App() {
   useEffect(() => {
     if (localStorage.getItem('forceAdminOpen') === 'true') {
       setIsAdmin(true);
-      setActiveTab('tambah'); // Force open the management tab
-      setIsPanelOpen(true); // Automatically open the sidebar
+      setActiveTab('tambah');
+      setIsPanelOpen(true);
       localStorage.removeItem('forceAdminOpen');
     }
   }, []);
@@ -438,7 +618,7 @@ export default function App() {
         else if (activeTab === 'tambah' && isPanelOpen && isAdmin) {
           if (adminTab === 'halte') setFormHalte({ ...formHalte, lat: e.latlng.lat, lon: e.latlng.lng });
           else if (adminTab === 'rute') setNewRoutePoints([...newRoutePoints, [e.latlng.lng, e.latlng.lat]]);
-        } else { setSelectedRouteCode(null); setSelectedHalteId(null); }
+        } else { setSelectedRouteCode(null); setSelectedHalteId(null); setAnimatingRouteCode(null); }
       },
     });
     return null;
@@ -472,7 +652,7 @@ export default function App() {
         </div>
       )}
 
-      {/* NAVBAR GLOBAL (Sama dengan Landing Page) */}
+      {/* NAVBAR GLOBAL */}
       <div 
         className="fixed top-0 left-0 w-full h-6 sm:h-8 z-[60] drop-shadow-lg shrink-0" 
         style={{ 
@@ -484,24 +664,15 @@ export default function App() {
       ></div>
       <nav className="w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 h-16 shrink-0 flex items-center justify-between px-6 shadow-md mt-4 sm:mt-5">
         <div className="flex items-center space-x-3">
-          {/* Exact Bajaj Logo (Thick Line Art) */}
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className="w-8 h-8 text-amber-400 drop-shadow-md">
             <g stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none">
-              {/* Body Frame */}
               <path d="M 15 65 L 15 30 Q 15 15 30 15 L 60 15 Q 80 15 85 45 L 85 65 L 15 65 Z" />
-              {/* Diagonal Passenger Cutout */}
               <path d="M 15 45 L 35 65" />
-              {/* Center Pillar */}
               <path d="M 45 15 L 45 65" />
-              {/* Driver Seat */}
               <path d="M 45 45 Q 60 45 60 65" />
-              {/* Handlebar */}
               <path d="M 65 15 Q 90 15 90 25" />
-              {/* Front Mudguard */}
               <path d="M 85 45 Q 100 45 100 65 L 85 65" />
-              {/* Rear Wheel */}
               <circle cx="30" cy="75" r="10" />
-              {/* Front Wheel */}
               <circle cx="85" cy="75" r="10" />
             </g>
           </svg>
@@ -517,8 +688,6 @@ export default function App() {
 
       {/* CONTAINER BAWAH (SIDEBAR + MAP) */}
       <div className="flex-1 flex overflow-hidden relative">
-
-      {/* TOMBOL BUKA SIDEBAR DIPINDAH KE TENGAH */}
 
       {/* MAIN DASHBOARD PANEL (Sleek Floating Island) */}
       <div className={`absolute top-4 left-4 bottom-4 z-[1002] w-[400px] bg-slate-900/95 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5),_inset_0_1px_0_rgba(255,255,255,0.1)] rounded-2xl border border-slate-700/50 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden ${isPanelOpen ? 'translate-x-0 opacity-100' : '-translate-x-[120%] opacity-0'}`}>
@@ -570,6 +739,7 @@ export default function App() {
                     <div className={`w-2 h-2 rounded-full ${showRute ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-slate-600'}`}></div> Rute
                   </button>
                 </div>
+
 
                 {/* --- FILTER KATEGORI ANGKUTAN (Custom Dropdown) --- */}
                 <div className="mt-4 relative">
@@ -700,6 +870,8 @@ export default function App() {
                  </div>
               )}
               </div>
+
+
             </div>
           ) : isAdmin ? (
             <div className="animate-in fade-in space-y-4">
@@ -820,6 +992,11 @@ export default function App() {
       {/* MINIMAP RADAR */}
       {mapInstance && <Minimap mainMap={mapInstance} mapUrl={MAP_LAYERS[mapType]} maxNativeZoom={MAX_NATIVE_ZOOM[mapType]} />}
 
+      {/* SIMULASI BUS BERJALAN */}
+      {mapInstance && animatingRouteCode && (
+        <AnimatedBus ruteData={ruteData} animatingRouteCode={animatingRouteCode} mapInstance={mapInstance} />
+      )}
+
       {/* MAP ENGINE PUSAT */}
       <MapContainer center={[-6.225, 106.90]} zoom={13} zoomControl={false} attributionControl={false} className="w-full h-full z-0" ref={setMapInstance}>
         <TileLayer key={mapType} url={MAP_LAYERS[mapType]} detectRetina={true} maxZoom={21} maxNativeZoom={MAX_NATIVE_ZOOM[mapType]} />
@@ -876,9 +1053,10 @@ export default function App() {
             const isSelected = f.properties.kode_rute === selectedRouteCode;
             const isIntersected = intersectedRuteCodes.includes(f.properties.kode_rute);
             return {
-              color: isSelected ? '#f59e0b' : (isIntersected ? '#ef4444' : (f.properties.warna_jalur || '#1a73e8')), 
-              weight: isSelected || isIntersected ? 8 : 4,
-              opacity: isSelected || isIntersected ? 1 : 0.75
+              color: isSelected ? '#0ea5e9' : (isIntersected ? '#ef4444' : (f.properties.warna_jalur || '#1a73e8')), 
+              weight: isSelected || isIntersected ? 6 : 4,
+              opacity: isSelected || isIntersected ? 1 : 0.75,
+              className: isSelected ? 'route-path-animate' : ''
             };
           }} 
           onEachFeature={(f, l) => {
@@ -895,16 +1073,20 @@ export default function App() {
                 </div>
                 <div id="loading-panjang-${p.kode_rute}" class="text-[11px] text-slate-500 mt-2 mb-3 italic flex items-center gap-1.5">Menghitung jarak spasial...</div>
                 <div id="hasil-panjang-${p.kode_rute}" class="hidden bg-slate-950/50 text-emerald-400 p-2.5 rounded-lg text-[11px] font-bold border border-slate-800 shadow-inner mb-3"></div>
-                <div class="space-y-2.5 text-[12px] text-slate-300 border-t border-slate-700 pt-3.5">
+                <div class="space-y-2.5 text-[12px] text-slate-300 border-t border-slate-700 pt-3.5 mb-3">
                   <div class="flex justify-between"><span class="font-bold text-slate-500 text-[11px] uppercase tracking-wider">Metode Angkut</span><span class="font-bold text-white">${p.jenis_angkutan || '-'}</span></div>
                   <div class="flex justify-between"><span class="font-bold text-slate-500 text-[11px] uppercase tracking-wider">Kategori</span><span class="font-bold text-emerald-400">${p.kategori_layanan || '-'}</span></div>
                   <div class="flex justify-between"><span class="font-bold text-slate-500 text-[11px] uppercase tracking-wider">Jam Operasi</span><span class="font-bold text-white">${p.jam_operasional || '-'}</span></div>
                 </div>
+                <button onclick="window.startBusAnimation('${p.kode_rute}')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Simulasi Bus
+                </button>
                 ${adminRuteControls}
               </div>
             `);
             l.on('click', async function() {
-              setSelectedRouteCode(p.kode_rute); setSelectedHalteId(null); this.bringToFront(); 
+              setSelectedRouteCode(p.kode_rute); setAnimatingRouteCode(null); setSelectedHalteId(null); this.bringToFront(); 
               try {
                 const res = await axios.get(`${API_URL}/analisis/panjang-rute/${p.kode_rute}`);
                 document.getElementById(`loading-panjang-${p.kode_rute}`).style.display = 'none';

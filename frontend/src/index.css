@@ -13,6 +13,7 @@ html, body, #root {
   height: 100%;
   width: 100%;
   z-index: 0;
+  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Dark Theme for Leaflet Controls */
@@ -72,4 +73,20 @@ html, body, #root {
 .leaflet-popup-close-button:hover {
   color: #34d399 !important; /* text-emerald-400 */
   background: transparent !important;
+}
+
+/* Animasi Garis Rute Berjalan (Route Drawing / Marching Ants) */
+.route-path-animate {
+  stroke-dasharray: 6, 8;
+  animation: route-march 1s linear infinite;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+@keyframes route-march {
+  from {
+    stroke-dashoffset: 30;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }

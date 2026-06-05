@@ -32,6 +32,7 @@ const iconDefault = createGoogleStyleIcon('bg-[#1a73e8]', 'hover:scale-110');
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  
   const [pantunText, setPantunText] = useState('');
   const [ruteData, setRuteData] = useState(null);
   const [halteData, setHalteData] = useState(null);

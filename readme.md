@@ -91,23 +91,28 @@ Tubes_sig/
 
 ---
 
-## Fitur Aplikasi
+## Fitur Aplikasi & Pembaruan Terbaru
 
-### 1. Visualisasi Peta Interaktif
-
-Aplikasi menampilkan peta interaktif wilayah Jakarta Timur menggunakan Leaflet.
-
-Layer yang tersedia:
-
-- Layer halte
-- Layer rute angkutan umum
-- Layer batas kecamatan
-- Basemap modern, OSM, satelit, terrain, dan dark mode
-- Minimap
+### 1. UI/UX Modern & Animasi Mulus (Framer Motion)
+- **Glassmorphism**: Desain panel dan antarmuka menggunakan efek kaca tembus pandang (*blur*) yang elegan dan responsif.
+- **Landing Page Interaktif**: Halaman awal yang memukau dengan animasi *parallax*, ilustrasi Bajaj/Bus TransJakarta, dan **Fitur Text-to-Speech** yang membacakan pantun khas Betawi secara otomatis.
+- **Transisi Sinematik & Loading Screen**: Transisi mulus tanpa layar kosong dari *Landing Page* ke Peta, dilengkapi layar pemuatan bertema "Betawi Elegan" ("BENTARAN YEE...") berdurasi 2.5 detik dengan efek pengetikan (*typewriter*) dan *neon progress bar*.
+- **Panel Eksplorasi Terapung**: Manajemen rute, halte, radius, dan dashboard berada dalam satu panel terapung (*floating panel*) yang menghemat ruang layar.
 
 ---
 
-### 2. Data Halte
+### 2. Visualisasi Peta Interaktif (Leaflet)
+
+Aplikasi menampilkan peta interaktif wilayah Jakarta Timur menggunakan Leaflet secara dinamis.
+Fitur Pemetaan Utama:
+- **Auto-Fit Bounds**: Peta secara otomatis menyesuaikan bingkai (*zoom* dan *pan*) saat pengguna memilih rute, halte, atau hasil analisis radius.
+- Mode Basemap: Pilihan basemap Modern, OSM, Satelit, Terrain, dan Dark Mode.
+- Layer Halte, Rute Angkutan Umum, dan Batas Kecamatan.
+- Minimap navigasi di pojok layar.
+
+---
+
+## 2. Data Halte
 
 Data halte ditampilkan sebagai marker pada peta.
 
@@ -124,7 +129,7 @@ Informasi yang ditampilkan pada popup:
 
 ---
 
-### 3. Data Rute
+## 3. Data Rute
 
 Data rute ditampilkan sebagai garis pada peta.
 
@@ -139,7 +144,7 @@ Informasi yang ditampilkan pada popup:
 
 ---
 
-### 4. Filter Jenis Angkutan
+## 4. Filter Jenis Angkutan
 
 Sistem memiliki fitur filter berdasarkan kategori layanan angkutan umum.
 
@@ -158,7 +163,7 @@ Filter ini dibuat berdasarkan normalisasi kode rute dan klasifikasi dari atribut
 
 ---
 
-### 5. Analisis Radius Halte Terdekat
+## 5. Analisis Radius Halte Terdekat
 
 Pengguna dapat memilih titik pada peta dan menentukan radius pencarian.
 
@@ -170,7 +175,7 @@ ST_DWithin
 
 ---
 
-### 6. Analisis Rute yang Memotong Area Radius
+## 6. Analisis Rute yang Memotong Area Radius
 
 Sistem dapat menampilkan rute yang beririsan dengan area buffer dari titik yang dipilih.
 
@@ -183,7 +188,7 @@ ST_Intersects
 
 ---
 
-### 7. Hitung Panjang Rute
+## 7. Hitung Panjang Rute
 
 Sistem dapat menghitung estimasi panjang rute menggunakan fungsi:
 
@@ -193,7 +198,7 @@ ST_Length
 
 ---
 
-### 8. Hitung Jarak Antarhalte
+## 8. Hitung Jarak Antarhalte
 
 Sistem dapat menghitung jarak antara dua halte menggunakan fungsi:
 
@@ -203,7 +208,7 @@ ST_Distance
 
 ---
 
-### 9. Statistik Kecamatan
+## 9. Statistik Kecamatan
 
 Sistem dapat menampilkan statistik transportasi per kecamatan, seperti:
 
@@ -216,16 +221,13 @@ Fungsi spasial yang digunakan:
 ST_Intersects
 ```
 
----
+### 10. CRUD Data Langsung dari Peta
 
-### 10. CRUD Data
-
-Admin dapat melakukan:
-
-- Tambah data halte
+Panel Manajemen Data terintegrasi langsung ke dalam antarmuka peta, memungkinkan admin untuk melakukan:
+- Tambah data halte (dengan mengklik titik di peta)
 - Edit data halte
 - Hapus data halte
-- Tambah data rute
+- Tambah data rute (dengan menggambar rute langsung di peta)
 - Edit data rute
 - Hapus data rute
 
@@ -634,9 +636,8 @@ SQLALCHEMY_DATABASE_URL = "postgresql://postgres:figo1234@localhost:5432/tubessi
    - mencari halte/rute,
    - menyalakan atau mematikan layer halte/rute,
    - memilih kategori jenis angkutan,
-   - melakukan analisis radius,
-   - melihat statistik kecamatan.
-6. Login sebagai admin untuk mengelola data halte dan rute.
+   - melihat statistik kecamatan dalam bentuk teks.
+6. Login sebagai admin untuk mengelola (Tambah/Edit/Hapus) data halte dan rute secara langsung dari panel peta tanpa pindah halaman.
 
 ---
 
@@ -739,7 +740,11 @@ Project sudah memiliki:
 - Frontend React Leaflet
 - Database PostgreSQL/PostGIS
 - Data halte, rute, dan kecamatan
-- CRUD halte dan rute
-- Analisis spasial
+- Antarmuka Glassmorphism & Animasi Framer Motion
+- Auto-Fit Bounds
+- Landing Page Interaktif dengan Suara (TTS)
+- Loading Screen Transisi Mulus (Betawi Elegan)
+- CRUD halte dan rute terintegrasi di peta
+- Analisis spasial (Radius, Intersect, Length, Distance)
 - Filter kategori jenis angkutan
 - View normalisasi kode rute

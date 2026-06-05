@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Map, MapPin, Bus, Route, Activity, BarChart3, Users, ExternalLink, Search } from 'lucide-react';
+import { Map as MapIcon, MapPin, Bus, Route, Activity, BarChart3, Users, ExternalLink, Search } from 'lucide-react';
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- KONFIGURASI MARKER "TEARDROP PIN" ALA GOOGLE MAPS ---
 const createGoogleStyleIcon = (bgColorClass, extraClass = '') => {
@@ -98,9 +99,18 @@ const LandingPage = () => {
     }
   };
 
+  const handleNavigateMap = () => {
+    navigate('/map');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-emerald-500 selection:text-white overflow-x-hidden relative">
-      
+    <motion.div 
+      initial={{ opacity: 0, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-emerald-500 selection:text-white overflow-x-hidden relative"
+    >
+
+
       {/* MODAL AUTENTIKASI (Landing Page) */}
       {showAdminModal && (
         <div className="fixed inset-0 z-[9999] bg-slate-950/80 flex items-center justify-center backdrop-blur-md">
@@ -301,12 +311,17 @@ const LandingPage = () => {
             </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight mb-6"
+          >
             <span className="block text-white mb-2">Nyok, Jelajahi Transportasi</span>
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-300 to-amber-300">
               Jakarta Timur
             </span>
-          </h1>
+          </motion.h1>
           
           <p className="mt-8 max-w-2xl mx-auto text-xl text-slate-300 mb-12 leading-relaxed">
             Sistem Informasi Geografis (WebGIS) modern buat bantuin Encang, Encing, Nyak, dan Babe nyari trayek angkutan umum sama halte paling deket.
@@ -314,7 +329,7 @@ const LandingPage = () => {
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button 
-              onClick={() => navigate('/map')}
+              onClick={handleNavigateMap}
               className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-full transition-all transform hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/40 flex items-center justify-center gap-3 text-lg border border-emerald-400/50"
             >
               <Bus className="w-6 h-6" />
@@ -422,7 +437,13 @@ const LandingPage = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             {/* Fitur 1 */}
-            <div className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-emerald-900/30 hover:border-emerald-500/50 transition-all duration-300">
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-emerald-900/30 hover:border-emerald-500/50 transition-all duration-300"
+            >
               {/* Potongan Waru Top Eaves */}
               <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2310b981\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
               
@@ -435,10 +456,16 @@ const LandingPage = () => {
               <p className="text-slate-400 leading-relaxed relative z-10">
                 Liat jalur rute Mikrotrans ampe TransJakarta gampang bener. Tinggal pilih, langsung nongol jalurnya di peta.
               </p>
-            </div>
+            </motion.div>
 
             {/* Fitur 2 */}
-            <div className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-amber-900/30 hover:border-amber-500/50 transition-all duration-300">
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-amber-900/30 hover:border-amber-500/50 transition-all duration-300"
+            >
               {/* Potongan Waru Top Eaves */}
               <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%23f59e0b\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
               
@@ -449,12 +476,18 @@ const LandingPage = () => {
               </div>
               <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-amber-400 transition-colors relative z-10">Halte Paling Nempel</h3>
               <p className="text-slate-400 leading-relaxed relative z-10">
-                Kagak usah takut nyasar! Tinggal pencet peta buat nyari halte paling deket dari tempat lu berdiri sekarang.
+                Pencet aje mana jalanan lu, ntar die ngasih tau halte terdekat di radius 500 meter. Kaga usah bingung lagi cari pangkalan.
               </p>
-            </div>
+            </motion.div>
 
             {/* Fitur 3 */}
-            <div className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-cyan-900/30 hover:border-cyan-500/50 transition-all duration-300">
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="bg-slate-950 p-8 pt-12 rounded-3xl border border-slate-800 border-t-0 shadow-xl relative overflow-hidden group hover:-translate-y-2 hover:shadow-cyan-900/30 hover:border-cyan-500/50 transition-all duration-300"
+            >
               {/* Potongan Waru Top Eaves */}
               <div className="absolute top-0 left-0 w-full h-8" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'46\' viewBox=\'0 0 40 46\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M1 0 L39 0 L39 12 A8 8 0 0 0 39 28 L20 46 L1 28 A8 8 0 0 0 1 12 Z\' fill=\'%2306b6d4\' /%3E%3C/svg%3E")', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'top left' }}></div>
               
@@ -467,7 +500,7 @@ const LandingPage = () => {
               <p className="text-slate-400 leading-relaxed relative z-10">
                 Laporan komplit tiap kecamatan. Dapet info jumlah halte, trayek nyang ngeliwatin, ampe panjang jalurnya.
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -593,11 +626,14 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="bg-slate-950 py-8 text-center relative overflow-hidden z-20 border-t border-slate-900">
-        <p className="text-slate-500 text-sm relative z-10">
-          &copy; {new Date().getFullYear()} Tim WebGIS Transportasi Jakarta Timur. Dibuat dengan 💚 di Sumatera.
-        </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center">
+          <p className="text-slate-500 flex justify-center items-center gap-2">
+            Dibuat pakai <span className="text-red-500 animate-pulse">❤️</span> oleh Mahasiswa Jaktim
+          </p>
+        </div>
       </footer>
-    </div>
+
+    </motion.div>
   );
 };
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bus, Map as MapIcon } from 'lucide-react';
 import { MapContainer, TileLayer, GeoJSON, Circle, CircleMarker, useMapEvents, ZoomControl, Polyline, Marker, Popup, Rectangle, useMap, useMapEvent } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -259,7 +261,19 @@ function Minimap({ mainMap, mapUrl, maxNativeZoom }) {
 }
 
 // --- KOMPONEN UTAMA ---
-export default function App() {
+const MapApp = () => {
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const mapRef = useRef(null);
+
+  // Efek Loading Awal
+  useEffect(() => {
+    // Beri waktu 2500ms (2.5 detik) sesuai permintaan agar terasa pas loadingnya
+    const loadTimer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 2500); 
+    return () => clearTimeout(loadTimer);
+  }, []);
+
   const [mapInstance, setMapInstance] = useState(null);
 
   const [ruteData, setRuteData] = useState(null);
@@ -628,8 +642,66 @@ export default function App() {
   const intersectedRuteCodes = intersectData?.features ? intersectData.features.map(f => f.properties.kode_rute) : [];
 
   return (
-    <div className="w-full h-screen bg-slate-950 font-sans text-slate-100 flex flex-col overflow-hidden relative">
+    <motion.div 
+      className="w-full h-screen bg-slate-950 font-sans text-slate-100 flex flex-col overflow-hidden relative"
+    >
       
+      {/* JARVIS GLASSMORPHISM LOADING SCREEN DENGAN TEKS BETAWI */}
+      <AnimatePresence>
+        {isInitialLoading && (
+          <motion.div 
+            initial={{ opacity: 1, backdropFilter: 'blur(24px)' }}
+            exit={{ opacity: 0, scale: 1.05, backdropFilter: 'blur(0px)' }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="fixed inset-0 z-[99999] bg-slate-950/70 flex flex-col items-center justify-center overflow-hidden"
+          >
+            {/* Ornamen Garis Elegan */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+            
+            <div 
+              className="relative flex flex-col items-center justify-center z-10"
+            >
+              <div className="relative flex items-center justify-center w-32 h-32 mb-6">
+                {/* Lingkaran Luar Berputar Lebih Lambat & Elegan */}
+                <div className="absolute inset-0 border-t-2 border-r-2 border-emerald-400 rounded-full animate-[spin_4s_linear_infinite]"></div>
+                <div className="absolute inset-2 border-b-2 border-l-2 border-amber-400 rounded-full animate-[spin_5s_linear_infinite_reverse]"></div>
+                {/* Ikon Kompas / Peta di Tengah */}
+                <MapIcon className="w-12 h-12 text-emerald-300 animate-pulse drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]" />
+              </div>
+              
+              <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-emerald-400 tracking-[0.2em] mb-4 drop-shadow-lg">
+                BENTARAN YEE...
+              </h2>
+              
+              {/* Efek Teks Berganti & Garis Neon (Disesuaikan 2.5 Detik) */}
+              <div className="w-72 flex flex-col items-center">
+                <div className="h-6 overflow-hidden relative w-full text-center">
+                  <motion.p 
+                    animate={{ y: [0, -24, -48] }} 
+                    transition={{ duration: 2.5, times: [0, 0.5, 1], ease: "steps(2)" }} 
+                    className="text-emerald-100/80 text-sm md:text-base tracking-widest font-mono flex flex-col"
+                  >
+                    <span className="h-6 flex items-center justify-center">MENGGELAR PETA...</span>
+                    <span className="h-6 flex items-center justify-center">MENCARI RUTE TERBAIK...</span>
+                    <span className="h-6 flex items-center justify-center">SIAP BERANGKAT!</span>
+                  </motion.p>
+                </div>
+                
+                {/* Neon Progress Bar (Disesuaikan 2.5 Detik) */}
+                <div className="w-full h-[3px] bg-slate-800 rounded-full mt-3 overflow-hidden shadow-inner">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2.5, ease: "easeInOut" }}
+                    className="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-300 shadow-[0_0_10px_#34d399]"
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* MODAL AUTENTIKASI */}
       {showAuthModal && (
         <div className="absolute inset-0 z-[9999] bg-slate-950/80 flex items-center justify-center backdrop-blur-md">
@@ -1190,6 +1262,8 @@ export default function App() {
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .animate-bounce { animation: bounce 0.8s infinite ease-in-out; }
       `}</style>
-    </div>
+    </motion.div>
   );
 }
+
+export default MapApp;
